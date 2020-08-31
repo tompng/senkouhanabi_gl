@@ -21,11 +21,13 @@ const target = new THREE.WebGLRenderTarget(size, size, {
 const targetRenderMesh = new Mesh(new THREE.PlaneBufferGeometry(), new THREE.MeshBasicMaterial({ map: target.texture }))
 const targetRenderScene = new THREE.Scene()
 const targetRenderCamera = new THREE.Camera()
+targetRenderMesh.scale.x = targetRenderMesh.scale.y = 2
 targetRenderScene.add(targetRenderMesh)
 
+
 function animate() {
-  const time = new Date().getTime() / 1000
-  const th = time / 4
+  const time = performance.now() / 1000
+  const th = time / 4 - Math.PI / 2
   camera.position.x = 3 * Math.cos(th)
   camera.position.y = 3 * Math.sin(th)
   camera.position.z = 0
