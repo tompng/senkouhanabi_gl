@@ -1,12 +1,13 @@
 import { Mesh } from 'three'
 import * as THREE from 'three'
-import { tubeMesh } from './tube'
+import { tubeMesh, generateRandomTubeMesh } from './tube'
 const renderer = new THREE.WebGLRenderer()
 const size = 800
 renderer.setSize(size, size)
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
-scene.add(tubeMesh)
+const tubes = [...new Array(100)].map(generateRandomTubeMesh)
+tubes.forEach(tube => scene.add(tube.mesh))
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 
@@ -32,6 +33,7 @@ function animate() {
   camera.position.y = 3 * Math.sin(th)
   camera.position.z = 0
   camera.lookAt(new THREE.Vector3(0, 0, 0))
+  tubes.forEach(tube => tube.update(camera))
   renderer.setRenderTarget(target)
   renderer.render(scene, camera)
   renderer.setRenderTarget(null)
