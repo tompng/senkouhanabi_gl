@@ -1,14 +1,9 @@
 import * as THREE from 'three'
+import { ShaderMaterial } from 'three'
 
 const vertexShader = `
-uniform vec3 pa;// = vec3(0, 0, 0);
-uniform vec3 pb;// = vec3(1, 0, 0);
-uniform vec3 da;// = vec3(1, 1, 1);
-uniform vec3 db;// = vec3(1, 1, 1);
-uniform vec3 cola;// = vec3(1,0.5,0);
-uniform vec3 colb;// = vec3(1,1,1);
-uniform float ra;// = 0.1;
-uniform float rb;// = 0.4;
+uniform vec3 pa, pb, da, db, cola, colb;
+uniform float ra, rb;
 varying vec3 vColorSum;
 void main() {
   float t = position.z;
@@ -38,57 +33,82 @@ function sphereRandom() {
   }
 }
 
-const geometry = cylinderGeometry(32, 16)
-export function generateRandomTubeMesh() {
-  const uniforms = {
-    pa: { value: new THREE.Vector3(0, 0, 0) },
-    pb: { value: new THREE.Vector3(1, 0, 0) },
-    da: { value: new THREE.Vector3(1, 1, 1) },
-    db: { value: new THREE.Vector3(1, 1, 1) },
-    cola: { value: new THREE.Color(0) },
-    colb: { value: new THREE.Color(0xff8040) },
-    ra: { value: 0.02 },
-    rb: { value: 0.04 },
+const geometries: (THREE.BufferGeometry | undefined)[] = []
+function cachedCylinderGeometry(lsec: number, rsec: number) {
+  const idx = lsec * 128 + rsec
+  const geometry = geometries[idx]
+  if (geometry) return geometry
+  return geometries[idx] = cylinderGeometry(lsec, rsec)
+}
+
+export class Curve {
+  uniforms = {
+    pa: { value: new THREE.Vector3() },
+    pb: { value: new THREE.Vector3() },
+    da: { value: new THREE.Vector3() },
+    db: { value: new THREE.Vector3() },
+    cola: { value: new THREE.Color() },
+    colb: { value: new THREE.Color() },
+    ra: { value: 0 },
+    rb: { value: 0 }
   }
-  const p = sphereRandom()
-  const p2 = sphereRandom()
-  const p3 = sphereRandom()
-  const a = 0.2 + 1.8 * Math.random()
-  uniforms.pa.value.x = p.x * a
-  uniforms.pa.value.y = p.y * a
-  uniforms.pa.value.z = p.z * a
-  uniforms.pb.value.x = p.x * (1 + a)
-  uniforms.pb.value.y = p.y * (1 + a)
-  uniforms.pb.value.z = p.z * (1 + a)
-  uniforms.da.value.x = p.x + p2.x * 0.8
-  uniforms.da.value.y = p.y + p2.y * 0.8
-  uniforms.da.value.z = p.z + p2.z * 0.8
-  uniforms.db.value.x = p.x + p3.x * 0.8
-  uniforms.db.value.y = p.y + p3.y * 0.8
-  uniforms.db.value.z = p.z + p3.z * 0.8
-  function update(camera: THREE.Camera) {
-    function r(p: THREE.Vector3) {
-      const distance = Math.hypot(p.x - camera.position.x, p.y - camera.position.y, p.z - camera.position.z)
-      return 0.02 + Math.abs(distance - 3) * 0.01 * distance
-    }
-    uniforms.ra.value = r(uniforms.pa.value)
-    uniforms.rb.value = r(uniforms.pb.value)
-  }
-  const mesh = new THREE.Mesh(
-    geometry,
-    new THREE.ShaderMaterial({
-      uniforms,
+  readonly pa: THREE.Vector3
+  readonly pb: THREE.Vector3
+  readonly da: THREE.Vector3
+  readonly db: THREE.Vector3
+  readonly cola: THREE.Color
+  readonly colb: THREE.Color
+  mesh: THREE.Mesh
+  constructor() {
+    this.pa = this.uniforms.pa.value
+    this.pb = this.uniforms.pb.value
+    this.da = this.uniforms.da.value
+    this.db = this.uniforms.db.value
+    this.cola = this.uniforms.cola.value
+    this.colb = this.uniforms.colb.value
+    this.mesh = new THREE.Mesh()
+    this.mesh.material = new ShaderMaterial({
+      uniforms: this.uniforms,
       vertexShader,
       fragmentShader,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     })
-  )
-  return { update, mesh }
+  }
+  update({ x, y, z }: { x: number; y: number; z: number }) {
+    function r(p: THREE.Vector3) {
+      const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
+      return 0.02 + Math.abs(distance - 3) * 0.01 * distance
+    }
+    this.uniforms.ra.value = r(this.pa)
+    this.uniforms.rb.value = r(this.pb)
+    this.mesh.geometry = cachedCylinderGeometry(32, 16)
+  }
 }
 
-export const tubeMesh = generateRandomTubeMesh()
+export function generateRandomCurve() {
+  const curve = new Curve()
+  const p = sphereRandom()
+  const p2 = sphereRandom()
+  const p3 = sphereRandom()
+  const a = 0.2 + 1.8 * Math.random()
+  curve.pa.x = p.x * a
+  curve.pa.y = p.y * a
+  curve.pa.z = p.z * a
+  curve.pb.x = p.x * (1 + a)
+  curve.pb.y = p.y * (1 + a)
+  curve.pb.z = p.z * (1 + a)
+  curve.da.x = p.x + p2.x * 0.8
+  curve.da.y = p.y + p2.y * 0.8
+  curve.da.z = p.z + p2.z * 0.8
+  curve.db.x = p.x + p3.x * 0.8
+  curve.db.y = p.y + p3.y * 0.8
+  curve.db.z = p.z + p3.z * 0.8
+  curve.cola.setRGB(0.8, 0.4, 0.2)
+  curve.colb.setRGB(0.4, 0.2, 0.1)
+  return curve
+}
 
 export function cylinderGeometry(lsections: number, rsections: number) {
   const geometry = new THREE.BufferGeometry()
