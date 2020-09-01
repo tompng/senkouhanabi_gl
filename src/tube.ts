@@ -15,7 +15,7 @@ void main() {
   vec3 p = mix(pa, pb, t * t * (3.0 - 2.0 * t)) + da * t * (t - 1.0) * (t - 1.0) + db * t * t * (t - 1.0);
   vec3 cpos = (viewMatrix * vec4(p, 1)).xyz;
   cpos += vec3(position.xy, 0) * mix(ra, rb, t) / cpos.z;
-  vColorSum = t * (1.0 - 0.5 * t) / ra * cola + t * t * 0.5 / rb * colb;
+  vColorSum = t * (1.0 - 0.5 * t) / ra / ra * cola + t * t * 0.5 / rb / rb * colb;
   gl_Position = projectionMatrix * vec4(cpos, 1);
 }
 `
@@ -23,7 +23,7 @@ void main() {
 const fragmentShader = `
 varying vec3 vColorSum;
 void main() {
-  gl_FragColor.rgb = (2.0 * float(gl_FrontFacing) - 1.0) * vColorSum;
+  gl_FragColor.rgb = (2.0 * float(gl_FrontFacing) - 1.0) * vColorSum * 0.05;
   gl_FragColor.a = 1.0;
 }
 `
@@ -93,26 +93,19 @@ export const tubeMesh = generateRandomTubeMesh()
 export function cylinderGeometry(lsections: number, rsections: number) {
   const geometry = new THREE.BufferGeometry()
   const positions: number[] = []
-  const normals: number[] = []
   const indices: number[] = []
   const rs: [number, number][] = []
-  const zn = Math.ceil(rsections / 2)
   for (let i = 0; i < rsections; i++) {
     const th = 2 * Math.PI * i / rsections
     rs.push([Math.cos(th), Math.sin(th)])
   }
   for (let i = 0; i <= lsections; i++) {
     const z = i / lsections
-    rs.forEach(([cos, sin]) => {
-      normals.push(cos, sin, 0)
-      positions.push(cos, sin, z)
-    })
+    rs.forEach(([cos, sin]) => positions.push(cos, sin, z))
   }
   const bottomIndex = positions.length / 3
-  normals.push(0, 0, -1)
   positions.push(0, 0, 0)
   const topIndex = positions.length / 3
-  normals.push(0, 0, 1)
   positions.push(0, 0, 1)
   for (let i = 0; i < lsections; i++) {
     const idxa = i * rsections
@@ -128,7 +121,6 @@ export function cylinderGeometry(lsections: number, rsections: number) {
     indices.push(k + j, k + (j + 1) % rsections, topIndex)
   }
   geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
-  geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(positions), 3))
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1))
   return geometry
 }
