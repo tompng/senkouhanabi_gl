@@ -23,7 +23,7 @@ void main() {
 }
 `
 
-function sphereRandom() {
+export function sphereRandom() {
   while (true) {
     const x = 2 * Math.random() - 1
     const y = 2 * Math.random() - 1
@@ -79,7 +79,7 @@ export class Curve {
   update({ x, y, z }: { x: number; y: number; z: number }) {
     function r(p: THREE.Vector3) {
       const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
-      return 0.02 + Math.abs(distance - 3) * 0.01 * distance
+      return 0.015 + Math.abs(distance - 3) * 0.01 * distance
     }
     this.uniforms.ra.value = r(this.pa)
     this.uniforms.rb.value = r(this.pb)
@@ -143,4 +143,30 @@ export function cylinderGeometry(lsections: number, rsections: number) {
   geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3))
   geometry.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1))
   return geometry
+}
+
+export class CurveManager {
+  curves: Curve[] = []
+  activeCount = 0
+  constructor(public scene: THREE.Scene) {}
+  reset() {
+    for (let i = 0; i < this.activeCount; i++) {
+      this.scene.remove(this.curves[i].mesh)
+    }
+    this.activeCount = 0
+  }
+  get() {
+    const index = this.activeCount
+    this.activeCount++
+    let curve = this.curves[index]
+    if (!curve) {
+      curve = new Curve()
+      this.curves[index] = curve
+    }
+    this.scene.add(curve.mesh)
+    return curve
+  }
+  update(cameraPosition: { x: number; y: number; z: number }) {
+    for (let i = 0; i < this.activeCount; i++) this.curves[i].update(cameraPosition)
+  }
 }
