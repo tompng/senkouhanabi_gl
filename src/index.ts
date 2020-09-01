@@ -37,7 +37,7 @@ type SparkElement = {
   at: number
   w: number
 }
-const gravity = 20.4
+const gravity = 100
 function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
   const p2 = { x: p.x + v.x * t, y: p.y + v.y * t, z: p.z + v.z * t - gravity * t * t / 2 }
@@ -87,25 +87,30 @@ function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: nu
 let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
-curves.reset()
-const v = sphereRandom()
-const vr = 4
-sparks.push({ p: { x: 0, y: 0, z: 0 }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.2, at: 0.2 * Math.random(), w: 1 })
-sparks.forEach(sp => nextSpark(sp, 1000, []))
-
-function animate() {
-  const time = performance.now() / 1000
-  const dt = (time - twas) * 2
-  twas = time
-  curves.reset()
-  if (Math.random() < 0.2) {
-    const v = sphereRandom()
-    const vr = 4
-    sparks.push({ p: { x: 0, y: 0, z: 0 }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.2, at: 0.2 * Math.random(), w: 1 })
-  }
+function add() {
+  const v = sphereRandom()
+  const vr = 16
+  const r = 0.1
+  sparks.push({ p: { x: r * v.x, y: r * v.y, z: r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.01 + 0.04 * Math.random(), w: 1 })
+}
+function update(dt: number) {
   const sparks2: SparkElement[] = []
   sparks.forEach(sp => nextSpark(sp, dt, sparks2))
   sparks = sparks2
+}
+for (let i = 0; i < 20; i++) add()
+update(1000)
+let running = false
+document.body.onclick = () => { running = true }
+function animate() {
+  const time = performance.now() / 1000
+  const dt = time - twas
+  twas = time
+  if (running) {
+    curves.reset()
+    for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
+    update(dt)
+  }
   const th = time / 4 - Math.PI / 2
   camera.position.x = 3 * Math.cos(th)
   camera.position.y = 3 * Math.sin(th)
@@ -117,6 +122,5 @@ function animate() {
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
   requestAnimationFrame(animate)
-  // setTimeout(animate, 100)
 }
 animate()
