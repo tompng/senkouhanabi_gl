@@ -38,19 +38,19 @@ type SparkElement = {
 const friction = 30
 function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
-  const p2 = positionAt(p, v, friction, t)
-  const v2 = velocityAt(v, friction, t)
-  sparkCurve(p, v, p2, v2, life, w, t)
+  const fr = friction / w
+  const p2 = positionAt(p, v, fr, t)
+  const v2 = velocityAt(v, fr, t)
+  sparkCurve(p, v, p2, v2, life, w, t, fr)
   if (t === life) return
   if (t === time) {
-    sparkCurve(p, v, p2, v2, life, w, t)
     out.push({ p: p2, v: v2, life: life - t, at: at - t, w })
     return
   }
   if (w < 1/16) return
   for (let i = 0; i < 10; i++) {
     const v3 = sphereRandom()
-    const vr = 3 * w
+    const vr = 4
     const life2 = life - t
     const at2 = Math.min(life2, 0.02 + 2 * life2 * Math.random())
     nextSpark({
@@ -63,7 +63,7 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
   }
 }
 
-function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: number) {
+function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: number, friction: number) {
   const curve = curves.get()
   curve.p.x = p.x
   curve.p.y = p.y
