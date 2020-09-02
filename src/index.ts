@@ -17,7 +17,7 @@ scene.add(new THREE.AmbientLight('#444', 1))
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
-  type: THREE.FloatType
+  type: THREE.HalfFloatType
 })
 const targetRenderMesh = new Mesh(new THREE.PlaneBufferGeometry(), new THREE.MeshBasicMaterial({ map: target.texture }))
 const targetRenderScene = new THREE.Scene()
