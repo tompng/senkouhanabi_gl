@@ -37,11 +37,26 @@ type SparkElement = {
   at: number
   w: number
 }
-const gravity = 100
+const gravityZ = -100
+const wind = { x: 6, y: 0, z: 0 }
+function pvAt(p: P3, v: P3, f: number, t: number): [P3, P3] {
+  const e = Math.exp(-f * t)
+  const p2 = {
+    x: p.x + wind.x * t - (v.x - wind.x) * (e - 1) / f,
+    y: p.y + wind.y * t - (v.y - wind.y) * (e - 1) / f,
+    z: p.z + (wind.z + gravityZ / f) * t - (v.z - wind.z - gravityZ / f) * (e - 1) / f
+  }
+  const v2 = {
+    x: wind.x + (v.x - wind.x) * e,
+    y: wind.y + (v.y - wind.y) * e,
+    z: wind.z + gravityZ / f + (v.z - wind.z - gravityZ / f) * e
+  }
+  return [p2, v2]
+}
+
 function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
-  const p2 = { x: p.x + v.x * t, y: p.y + v.y * t, z: p.z + v.z * t - gravity * t * t / 2 }
-  const v2 = { ...v, z: v.z - gravity * t }
+  const [p2, v2] = pvAt(p, v, 32, t)
   sparkCurve(p, v, p2, v2, life, w, t)
   if (t === life) return
   if (t === time) {
@@ -52,12 +67,12 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
   if (w < 1/16) return
   for (let i = 0; i < 10; i++) {
     const v3 = sphereRandom()
-    const vr = 10 * w
+    const vr = 20 * w
     const life2 = life - t
     const at2 = Math.min(life2, 0.02 + 2 * life2 * Math.random())
     nextSpark({
       p: p2,
-      v: { x: v2.x / 2 + vr * v3.x, y: v2.y / 2 + vr * v3.y, z: v2.z / 2 + vr * v3.z },
+      v: { x: v2.x + vr * v3.x, y: v2.y + vr * v3.y, z: v2.z + vr * v3.z },
       life: life2,
       at: at2,
       w: w / 2
@@ -89,7 +104,7 @@ let twas = performance.now() / 1000
 
 function add() {
   const v = sphereRandom()
-  const vr = 16
+  const vr = 48
   const r = 0.1
   sparks.push({ p: { x: r * v.x, y: r * v.y, z: r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.01 + 0.04 * Math.random(), w: 1 })
 }
