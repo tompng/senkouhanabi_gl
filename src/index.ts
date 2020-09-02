@@ -1,6 +1,6 @@
 import { Mesh } from 'three'
 import * as THREE from 'three'
-import { sphereRandom, CurveManager } from './tube'
+import { sphereRandom, positionAt, velocityAt, CurveManager } from './tube'
 const renderer = new THREE.WebGLRenderer()
 const size = 800
 renderer.setSize(size, size)
@@ -8,9 +8,6 @@ const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
 const curves = new CurveManager(scene)
 
-// for (let i = 0; i < 20; i++) {
-//   spark({ x: 0, y: 0, z: 0 }, sphereRandom(), 0)
-// }
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 
@@ -37,26 +34,12 @@ type SparkElement = {
   at: number
   w: number
 }
-const gravityZ = -100
-const wind = { x: 6, y: 0, z: 0 }
-function pvAt(p: P3, v: P3, f: number, t: number): [P3, P3] {
-  const e = Math.exp(-f * t)
-  const p2 = {
-    x: p.x + wind.x * t - (v.x - wind.x) * (e - 1) / f,
-    y: p.y + wind.y * t - (v.y - wind.y) * (e - 1) / f,
-    z: p.z + (wind.z + gravityZ / f) * t - (v.z - wind.z - gravityZ / f) * (e - 1) / f
-  }
-  const v2 = {
-    x: wind.x + (v.x - wind.x) * e,
-    y: wind.y + (v.y - wind.y) * e,
-    z: wind.z + gravityZ / f + (v.z - wind.z - gravityZ / f) * e
-  }
-  return [p2, v2]
-}
 
+const friction = 30
 function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
-  const [p2, v2] = pvAt(p, v, 32, t)
+  const p2 = positionAt(p, v, friction, t)
+  const v2 = velocityAt(v, friction, t)
   sparkCurve(p, v, p2, v2, life, w, t)
   if (t === life) return
   if (t === time) {
@@ -67,7 +50,7 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
   if (w < 1/16) return
   for (let i = 0; i < 10; i++) {
     const v3 = sphereRandom()
-    const vr = 20 * w
+    const vr = 3 * w
     const life2 = life - t
     const at2 = Math.min(life2, 0.02 + 2 * life2 * Math.random())
     nextSpark({
@@ -82,21 +65,19 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
 
 function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: number) {
   const curve = curves.get()
-  curve.pa.x = p.x
-  curve.pa.y = p.y
-  curve.pa.z = p.z
-  curve.pb.x = p2.x
-  curve.pb.y = p2.y
-  curve.pb.z = p2.z
-  curve.da.x = v.x * t
-  curve.da.y = v.y * t
-  curve.da.z = v.z * t
-  curve.db.x = v2.x * t
-  curve.db.y = v2.y * t
-  curve.db.z = v2.z * t
+  curve.p.x = p.x
+  curve.p.y = p.y
+  curve.p.z = p.z
+  curve.v.x = v.x
+  curve.v.y = v.y
+  curve.v.z = v.z
   const c = w * t * 4
-  curve.cola.setRGB(0.8 * c, 0.4 * c, 0.2 * c)
-  curve.colb.setRGB(0.8 * c, 0.4 * c, 0.2 * c)
+  curve.color.setRGB(0.8, 0.4, 0.2)
+  curve.brightness0 = 1
+  curve.brightness1 = 0
+  curve.brightness2 = 0
+  curve.friction = friction
+  curve.time = t
 }
 
 let sparks: SparkElement[] = []
@@ -104,9 +85,9 @@ let twas = performance.now() / 1000
 
 function add() {
   const v = sphereRandom()
-  const vr = 48
-  const r = 0.1
-  sparks.push({ p: { x: r * v.x, y: r * v.y, z: r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.01 + 0.04 * Math.random(), w: 1 })
+  const vr = 4
+  const r = 0.01
+  sparks.push({ p: { x: r * v.x, y: r * v.y, z: r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.02 + 0.04 * Math.random(), w: 1 })
 }
 function update(dt: number) {
   const sparks2: SparkElement[] = []
@@ -127,8 +108,8 @@ function animate() {
     update(dt)
   }
   const th = time / 4 - Math.PI / 2
-  camera.position.x = 3 * Math.cos(th)
-  camera.position.y = 3 * Math.sin(th)
+  camera.position.x = 0.5 * Math.cos(th)
+  camera.position.y = 0.5 * Math.sin(th)
   camera.position.z = 0
   camera.lookAt(new THREE.Vector3(0, 0, 0))
   curves.update(camera.position)

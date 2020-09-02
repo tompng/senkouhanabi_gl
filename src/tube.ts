@@ -1,24 +1,54 @@
 import * as THREE from 'three'
 import { ShaderMaterial } from 'three'
+export type P3 = { x: number; y: number; z: number }
+const gravityZ = -9.8
+const wind = { x: 0.2, y: 0, z: 0 }
+export function positionAt(p: P3, v: P3, f: number, t: number) {
+  const e = Math.exp(-f * t)
+  return {
+    x: p.x + wind.x * t - (v.x - wind.x) * (e - 1) / f,
+    y: p.y + wind.y * t - (v.y - wind.y) * (e - 1) / f,
+    z: p.z + (wind.z + gravityZ / f) * t - (v.z - wind.z - gravityZ / f) * (e - 1) / f
+  }
+}
+export function velocityAt(v: P3, f: number, t: number) {
+  const e = Math.exp(-f * t)
+  return {
+    x: wind.x + (v.x - wind.x) * e,
+    y: wind.y + (v.y - wind.y) * e,
+    z: wind.z + gravityZ / f + (v.z - wind.z - gravityZ / f) * e
+  }
+}
 
 const vertexShader = `
-uniform vec3 pa, pb, da, db, cola, colb;
 uniform float ra, rb;
-varying vec3 vColorSum;
+uniform vec3 p, v;
+const vec3 gravity = vec3(0, 0, -9.8);
+const vec3 wind = vec3(0.2, 0, 0);
+uniform float time, friction;
+uniform float brightness0, brightness1, brightness2;
+varying float vBrightnessSum;
 void main() {
-  float t = position.z;
-  vec3 p = mix(pa, pb, t * t * (3.0 - 2.0 * t)) + da * t * (t - 1.0) * (t - 1.0) + db * t * t * (t - 1.0);
-  vec3 cpos = (viewMatrix * vec4(p, 1)).xyz;
-  cpos += vec3(position.xy, 0) * mix(ra, rb, t) / cpos.z;
-  vColorSum = t * (1.0 - 0.5 * t) / ra / ra * cola + t * t * 0.5 / rb / rb * colb;
+  float t = position.z * time;
+  float e = exp(-friction * t);
+  vec3 wg = wind + gravity / friction;
+  vec3 gpos = p + wg * t - (v - wg) * (e - 1.0) / friction;
+  vec3 cpos = (viewMatrix * vec4(gpos, 1)).xyz;
+  cpos += vec3(position.xy, 0) * mix(ra, rb, position.z) / cpos.z;
   gl_Position = projectionMatrix * vec4(cpos, 1);
+  // (b0+b1*t+b2*tt) * ((1-t/time)/ra/ra+t/time/rb/rb)
+  float sb = t * (brightness0 + t * (0.5 * brightness1 + t * brightness2 / 3.0));
+  float sbt = position.z * t * (0.5 * brightness0 + t * (brightness1 / 3.0 + 0.25 * t * brightness2));
+  vBrightnessSum = ((sb - sbt) / ra / ra + sbt / rb / rb);
 }
 `
 
 const fragmentShader = `
-varying vec3 vColorSum;
+varying float vBrightnessSum;
+uniform vec3 color;
 void main() {
-  gl_FragColor.rgb = (2.0 * float(gl_FrontFacing) - 1.0) * vColorSum * 0.05;
+  gl_FragColor.rgb = (2.0 * float(gl_FrontFacing) - 1.0) * vBrightnessSum * color * 0.0001;
+  // gl_FragColor.r = float(gl_FrontFacing);
   gl_FragColor.a = 1.0;
 }
 `
@@ -43,29 +73,30 @@ function cachedCylinderGeometry(lsec: number, rsec: number) {
 
 export class Curve {
   uniforms = {
-    pa: { value: new THREE.Vector3() },
-    pb: { value: new THREE.Vector3() },
-    da: { value: new THREE.Vector3() },
-    db: { value: new THREE.Vector3() },
-    cola: { value: new THREE.Color() },
-    colb: { value: new THREE.Color() },
+    p: { value: new THREE.Vector3() },
+    v: { value: new THREE.Vector3() },
+    color: { value: new THREE.Color() },
+    brightness0: { value: 0 },
+    brightness1: { value: 0 },
+    brightness2: { value: 0 },
+    friction: { value: 0 },
+    time: { value: 0 },
     ra: { value: 0 },
     rb: { value: 0 }
   }
-  readonly pa: THREE.Vector3
-  readonly pb: THREE.Vector3
-  readonly da: THREE.Vector3
-  readonly db: THREE.Vector3
-  readonly cola: THREE.Color
-  readonly colb: THREE.Color
+  readonly p: THREE.Vector3
+  readonly v: THREE.Vector3
+  readonly color: THREE.Color
+  brightness0 = 0
+  brightness1 = 0
+  brightness2 = 0
+  friction = 0
+  time = 0
   mesh: THREE.Mesh
   constructor() {
-    this.pa = this.uniforms.pa.value
-    this.pb = this.uniforms.pb.value
-    this.da = this.uniforms.da.value
-    this.db = this.uniforms.db.value
-    this.cola = this.uniforms.cola.value
-    this.colb = this.uniforms.colb.value
+    this.p = this.uniforms.p.value
+    this.v = this.uniforms.v.value
+    this.color = this.uniforms.color.value
     this.mesh = new THREE.Mesh()
     this.mesh.material = new ShaderMaterial({
       uniforms: this.uniforms,
@@ -77,37 +108,19 @@ export class Curve {
     })
   }
   update({ x, y, z }: { x: number; y: number; z: number }) {
-    function r(p: THREE.Vector3) {
+    function r(p: P3) {
       const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
-      return 0.015 + Math.abs(distance - 3) * 0.01 * distance
+      return 0.0004 + Math.abs(distance - 0.5) * 0.02 * distance
     }
-    this.uniforms.ra.value = r(this.pa)
-    this.uniforms.rb.value = r(this.pb)
+    this.uniforms.ra.value = r(this.p)
+    this.uniforms.rb.value = r(positionAt(this.p, this.v, this.friction, this.time))
+    this.uniforms.friction.value = this.friction
+    this.uniforms.time.value = this.time
+    this.uniforms.brightness0.value = this.brightness0
+    this.uniforms.brightness1.value = this.brightness1
+    this.uniforms.brightness2.value = this.brightness2
     this.mesh.geometry = cachedCylinderGeometry(32, 16)
   }
-}
-
-export function generateRandomCurve() {
-  const curve = new Curve()
-  const p = sphereRandom()
-  const p2 = sphereRandom()
-  const p3 = sphereRandom()
-  const a = 0.2 + 1.8 * Math.random()
-  curve.pa.x = p.x * a
-  curve.pa.y = p.y * a
-  curve.pa.z = p.z * a
-  curve.pb.x = p.x * (1 + a)
-  curve.pb.y = p.y * (1 + a)
-  curve.pb.z = p.z * (1 + a)
-  curve.da.x = p.x + p2.x * 0.8
-  curve.da.y = p.y + p2.y * 0.8
-  curve.da.z = p.z + p2.z * 0.8
-  curve.db.x = p.x + p3.x * 0.8
-  curve.db.y = p.y + p3.y * 0.8
-  curve.db.z = p.z + p3.z * 0.8
-  curve.cola.setRGB(0.8, 0.4, 0.2)
-  curve.colb.setRGB(0.4, 0.2, 0.1)
-  return curve
 }
 
 export function cylinderGeometry(lsections: number, rsections: number) {
