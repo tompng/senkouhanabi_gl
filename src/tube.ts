@@ -48,7 +48,6 @@ varying float vBrightnessSum;
 uniform vec3 color;
 void main() {
   gl_FragColor.rgb = (2.0 * float(gl_FrontFacing) - 1.0) * vBrightnessSum * color * 0.0001;
-  // gl_FragColor.r = float(gl_FrontFacing);
   gl_FragColor.a = 1.0;
 }
 `

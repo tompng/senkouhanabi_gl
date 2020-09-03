@@ -1,6 +1,7 @@
 import { Mesh } from 'three'
 import * as THREE from 'three'
 import { sphereRandom, positionAt, velocityAt, CurveManager } from './tube'
+import { Ball } from './ball'
 const renderer = new THREE.WebGLRenderer()
 const size = 800
 renderer.setSize(size, size)
@@ -10,9 +11,8 @@ const curves = new CurveManager(scene)
 
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
-
-scene.add(new THREE.DirectionalLight('#bbb', 1))
-scene.add(new THREE.AmbientLight('#444', 1))
+const ball = new Ball()
+scene.add(ball.mesh)
 
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
@@ -103,6 +103,7 @@ function animate() {
   const dt = time - twas
   twas = time
   if (running) {
+    ball.update(time)
     curves.reset()
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
     update(dt)
