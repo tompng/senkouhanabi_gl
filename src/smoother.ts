@@ -20,21 +20,26 @@ function solve(n: number, k: number, f: number[][], g: number[][]) {
     f[i][j] = (g[i][j] + k * sum) / (1 + 4 * k)
   }
   if (n <= 2) return
-  const errors = array2D(n)
-  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
-    const sum = f[(i + n - 1) % n][j] + f[(i + 1) % n][j]+ f[i][(j + n - 1) % n] + f[i][(j + 1) % n]
-    errors[i][j] = (1 + 4 * k) * f[i][j] - k * sum - g[i][j]
-  }
-  const g2 = array2D(n / 2)
-  const f2 = array2D(n / 2)
-  for (let i = 0; i < n / 2; i++) for (let j = 0; j < n / 2; j++) {
+  const n2 = n / 2
+  const g2 = array2D(n2)
+  const f2 = array2D(n2)
+  for (let i = 0; i < n2; i++) for (let j = 0; j < n2; j++) {
     const ia = (2 * i - 1 + n) % n, ib = (2 * i + 1) % n
     const ja = (2 * j - 1 + n) % n, jb = (2 * j + 1) % n
-    g2[i][j] = -(
-      + errors[ia][ja] + 2 * errors[ia][2 * j] + errors[ia][jb]
-      + 2 * errors[2 * i][ja] + 4 * errors[2 * i][2 * j] + 2 * errors[2 * i][jb]
-      + errors[ib][ja] + 2 * errors[ib][2 * j] + errors[ib][jb]
+    g2[i][j] = (
+      + g[ia][ja] + 2 * g[ia][2 * j] + g[ia][jb]
+      + 2 * g[2 * i][ja] + 4 * g[2 * i][2 * j] + 2 * g[2 * i][jb]
+      + g[ib][ja] + 2 * g[ib][2 * j] + g[ib][jb]
     ) / 16
+    f2[i][j] = (
+      + f[ia][ja] + 2 * f[ia][2 * j] + f[ia][jb]
+      + 2 * f[2 * i][ja] + 4 * f[2 * i][2 * j] + 2 * f[2 * i][jb]
+      + f[ib][ja] + 2 * f[ib][2 * j] + f[ib][jb]
+    ) / 16
+  }
+  for (let i = 0; i < n2; i++) for (let j = 0; j < n2; j++) {
+    const sum = f2[(i + n2 - 1) % n2][j] + f2[(i + 1) % n2][j]+ f2[i][(j + n2 - 1) % n2] + f2[i][(j + 1) % n2]
+    g2[i][j] = -((1 + k) * f2[i][j] - k * sum / 4 - g2[i][j])
   }
   solve(n / 2, k / 4, f2, g2)
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
