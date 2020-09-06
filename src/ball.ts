@@ -35,7 +35,8 @@ export class Ball {
     new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader,
-      fragmentShader
+      fragmentShader,
+      depthWrite: false
     })
   )
   update(time: number) {
