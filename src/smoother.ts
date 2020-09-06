@@ -152,7 +152,7 @@ export class Smoother {
   plane = new THREE.Mesh(new THREE.PlaneBufferGeometry())
   camera = new THREE.Camera()
   scene = new THREE.Scene()
-  constructor(public renderer: THREE.WebGLRenderer, public size: number, public type: THREE.TextureDataType = THREE.FloatType, public wrap: THREE.Wrapping = THREE.RepeatWrapping) {
+  constructor(public renderer: THREE.WebGLRenderer, public size: number, public type: THREE.TextureDataType = THREE.HalfFloatType, public wrap: THREE.Wrapping = THREE.RepeatWrapping) {
     this.scene.add(this.plane)
   }
   randomize(target: THREE.RenderTarget, range?: { min: number; max: number }) {
