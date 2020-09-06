@@ -10,6 +10,22 @@ void main() {
 }
 `
 
+const randomFragmentShader = `
+uniform float seed, minValue, maxValue;
+void main() {
+  vec4 a = vec4(1.2,3.1,2.3,2.4) * gl_FragCoord.x;
+  vec4 b = vec4(2.1,1.1,1.3,3.1) * gl_FragCoord.y;
+  vec4 c = vec4(3.1,2.3,1.7,1.3) * gl_FragCoord.x;
+  vec4 d = vec4(1.3,2.1,2.5,3.7) * gl_FragCoord.y;
+  b += sin(531.7 * a + 1.1 * seed + 1.0);
+  c += sin(712.3 * b + 2.3 * seed + 2.0);
+  d += sin(321.5 * a + 3.1 * seed + 3.0);
+  a += sin(457.1 * d + 4.2 * seed + 4.0);
+  vec4 x = sin(a + b + c + d) * 1234.5;
+  gl_FragColor = minValue + (maxValue - minValue) * (x - floor(x));
+}
+`
+
 const preSmoothFragmentShader = `
 uniform float delta, k;
 uniform sampler2D baseTexture;
@@ -131,12 +147,23 @@ export class Smoother {
   copyDownShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: copyDownFragmentShader, ...this.shaderOptions })
   addShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: copyFragmentShader, ...this.shaderAddOptions })
   wsumShader = new ShaderMaterial({ uniforms: this.wsumUniforms, vertexShader, fragmentShader: wsumFragmentShader, ...this.shaderOptions })
+  randomShader = new ShaderMaterial({ uniforms: { seed: { value: 0 }, minValue: { value: 0 }, maxValue: { value: 1 } }, vertexShader, fragmentShader: randomFragmentShader, ...this.shaderOptions })
   renderTargets: Record<string, THREE.WebGLRenderTarget | undefined> = {}
   plane = new THREE.Mesh(new THREE.PlaneBufferGeometry())
   camera = new THREE.Camera()
   scene = new THREE.Scene()
-  constructor(public renderer: THREE.WebGLRenderer, public size: number, public type: THREE.TextureDataType = THREE.FloatType) {
+  constructor(public renderer: THREE.WebGLRenderer, public size: number, public type: THREE.TextureDataType = THREE.FloatType, public wrap: THREE.Wrapping = THREE.RepeatWrapping) {
     this.scene.add(this.plane)
+  }
+  randomize(target: THREE.RenderTarget, range?: { min: number; max: number }) {
+    const renderTargetWas = this.renderer.getRenderTarget()
+    this.renderer.setRenderTarget(target)
+    this.plane.material = this.randomShader
+    this.randomShader.uniforms.seed.value = Math.random()
+    this.randomShader.uniforms.minValue.value = range?.min ?? 0
+    this.randomShader.uniforms.maxValue.value = range?.max ?? 1
+    this.renderer.render(this.scene, this.camera)
+    this.renderer.setRenderTarget(renderTargetWas)
   }
   smooth(input: THREE.Texture, k: number, output?: THREE.WebGLRenderTarget) {
     if (!output) output = this.getRenderTarget('output', this.size)
@@ -213,8 +240,10 @@ export class Smoother {
     render(this.postSmoothShader, output)
   }
   createRenderTarget(size: number) {
-    const option = {
+    const option: THREE.WebGLRenderTargetOptions = {
       type: this.type,
+      wrapS: this.wrap,
+      wrapT: this.wrap,
       depthBuffer: false,
       stencilBuffer: false
     }
@@ -229,7 +258,16 @@ export class Smoother {
   }
 
   dispose() {
-
+    this.addShader.dispose()
+    this.copyShader.dispose()
+    this.copyDownShader.dispose()
+    this.preSmoothShader.dispose()
+    this.postSmoothShader.dispose()
+    this.diffSmoothShader.dispose()
+    this.diffSmoothAddShader.dispose()
+    this.wsumShader.dispose()
+    this.randomShader.dispose()
+    Object.values(this.renderTargets).forEach(t => t?.dispose())
   }
 }
 
