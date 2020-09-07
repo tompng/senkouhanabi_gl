@@ -12,11 +12,10 @@ const curves = new CurveManager(scene)
 
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
-const ball = new Ball()
-scene.add(ball.mesh)
 const envObject = new Environment(...createTextures(renderer))
 scene.add(envObject.mesh)
-
+const ball = new Ball()
+scene.add(ball.mesh)
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
@@ -115,7 +114,7 @@ function animate() {
   const th = 0 * time / 4 - Math.PI / 2
   camera.position.x = 0.5 * Math.cos(th)
   camera.position.y = 0.5 * Math.sin(th)
-  camera.position.z = 0.1 * Math.sin(1.0 * time)
+  camera.position.z = 0.2 * Math.sin(1.0 * time)
   camera.lookAt(new THREE.Vector3(0, 0, 0))
   curves.update(camera.position)
   renderer.setRenderTarget(target)
