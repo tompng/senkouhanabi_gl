@@ -2,8 +2,9 @@ import { Mesh } from 'three'
 import * as THREE from 'three'
 import { sphereRandom, positionAt, velocityAt, CurveManager } from './tube'
 import { Ball } from './ball'
+import { createTextures, Environment } from './texture'
 const renderer = new THREE.WebGLRenderer()
-const size = 800
+const size = 1024
 renderer.setSize(size, size)
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
@@ -13,6 +14,8 @@ camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 const ball = new Ball()
 scene.add(ball.mesh)
+const envObject = new Environment(...createTextures(renderer))
+scene.add(envObject.mesh)
 
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
@@ -98,6 +101,7 @@ for (let i = 0; i < 20; i++) add()
 update(1000)
 let running = false
 document.body.onclick = () => { running = true }
+
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
@@ -108,13 +112,14 @@ function animate() {
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
     update(dt)
   }
-  const th = time / 4 - Math.PI / 2
+  const th = 0 * time / 4 - Math.PI / 2
   camera.position.x = 0.5 * Math.cos(th)
   camera.position.y = 0.5 * Math.sin(th)
-  camera.position.z = 0
+  camera.position.z = 0.1 * Math.sin(1.0 * time)
   camera.lookAt(new THREE.Vector3(0, 0, 0))
   curves.update(camera.position)
   renderer.setRenderTarget(target)
+  envObject.set(0.5, 0.2)
   renderer.render(scene, camera)
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
