@@ -3,6 +3,12 @@ import { ShaderMaterial } from 'three'
 export type P3 = { x: number; y: number; z: number }
 const gravityZ = -9.8
 const wind = { x: 0.2, y: 0, z: 0 }
+
+export function setWind(w: { x?: number, y?: number, z?: number }) {
+  if (w.x != null) wind.x = w.x
+  if (w.y != null) wind.y = w.y
+  if (w.z != null) wind.z = w.z
+}
 export function positionAt(p: P3, v: P3, f: number, t: number) {
   const e = Math.exp(-f * t)
   return {
@@ -24,7 +30,7 @@ const vertexShader = `
 uniform float ra, rb;
 uniform vec3 p, v;
 const vec3 gravity = vec3(0, 0, -9.8);
-const vec3 wind = vec3(0.2, 0, 0);
+uniform vec3 wind;
 uniform float time, friction;
 uniform float brightness0, brightness1, brightness2;
 varying float vBrightnessSum;
@@ -72,6 +78,7 @@ function cachedCylinderGeometry(lsec: number, rsec: number) {
 
 export class Curve {
   uniforms = {
+    wind: { value: new THREE.Vector3() },
     p: { value: new THREE.Vector3() },
     v: { value: new THREE.Vector3() },
     color: { value: new THREE.Color() },
@@ -111,6 +118,9 @@ export class Curve {
       const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
       return 0.0004 + Math.abs(distance - 0.5) * 0.02 * distance
     }
+    this.uniforms.wind.value.x = wind.x
+    this.uniforms.wind.value.y = wind.y
+    this.uniforms.wind.value.z = wind.z
     this.uniforms.ra.value = r(this.p)
     this.uniforms.rb.value = r(positionAt(this.p, this.v, this.friction, this.time))
     this.uniforms.friction.value = this.friction

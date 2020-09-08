@@ -1,6 +1,6 @@
 import { Mesh } from 'three'
 import * as THREE from 'three'
-import { sphereRandom, positionAt, velocityAt, CurveManager } from './tube'
+import { sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { Ball } from './ball'
 import { createTextures, Environment } from './texture'
 const renderer = new THREE.WebGLRenderer()
@@ -114,11 +114,15 @@ update(1000)
 let running = false
 document.body.onclick = () => { running = true }
 
+envObject.set(0.4, 0.1)
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
   twas = time
   if (running) {
+    envObject.set(0.4, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
+    const wind = Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)
+    setWind({ x: 0.1 * wind * wind })
     ball.update(time)
     curves.reset()
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
@@ -132,7 +136,6 @@ function animate() {
   camera.lookAt(new THREE.Vector3(-mouse.x / 10, 0, mouse.y / 10))
   curves.update(camera.position)
   renderer.setRenderTarget(target)
-  envObject.set(0.5, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
   renderer.render(scene, camera)
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
