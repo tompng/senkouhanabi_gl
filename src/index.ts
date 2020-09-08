@@ -12,6 +12,19 @@ const curves = new CurveManager(scene)
 
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
+const mouse = { x: 0, y: 0 }
+document.body.onmousemove = e => {
+  const el = renderer.domElement
+  const width = el.offsetWidth
+  const height = el.offsetHeight
+  const size = Math.min(width, height)
+  const x = 2.0 * (e.pageX - el.offsetLeft - width / 2) / size
+  const y = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
+  const r = Math.hypot(x, y)
+  const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
+  mouse.x = x * rscale / r
+  mouse.y = y * rscale / r
+}
 const envObject = new Environment(...createTextures(renderer))
 scene.add(envObject.mesh)
 const ball = new Ball()
@@ -111,14 +124,15 @@ function animate() {
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
     update(dt)
   }
-  const th = 0 * time / 4 - Math.PI / 2
-  camera.position.x = 0.5 * Math.cos(th)
-  camera.position.y = 0.5 * Math.sin(th)
-  camera.position.z = 0.2 * Math.sin(1.0 * time)
-  camera.lookAt(new THREE.Vector3(0, 0, 0))
+  const zth = mouse.y / 2
+  const xyth = -mouse.x / 2 - Math.PI / 2
+  camera.position.x = 0.5 * Math.cos(xyth) * Math.cos(zth)
+  camera.position.y = 0.5 * Math.sin(xyth) * Math.cos(zth)
+  camera.position.z = 0.5 * Math.sin(zth)
+  camera.lookAt(new THREE.Vector3(-mouse.x / 10, 0, mouse.y / 10))
   curves.update(camera.position)
   renderer.setRenderTarget(target)
-  envObject.set(0.5, 0.2)
+  envObject.set(0.5, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
   renderer.render(scene, camera)
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
