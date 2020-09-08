@@ -58,8 +58,14 @@ void main() {
   float tmin = (stoneMaxHeight - camera.z) / view.z;
   float tmax = - camera.z / view.z;
   if (view.z >= 0.0 || view.y * tmax > 1.0) {
-    if (view.z < 0.25 * texture2D(stoneTexture, vec2(0.2 * view.x, 0.3)).r + 1.0 * texture2D(stoneTexture, vec2(0.2 + 0.01 * view.x, 0.4)).r - 0.5) {
-      gl_FragColor = vec4(0.02,0.03,0.02,1);
+    float h1 = 0.2 * texture2D(stoneTexture, vec2(0.2 * view.x, 0.3)).r + texture2D(stoneTexture, vec2(0.2 + 0.01 * view.x, 0.4)).r - 0.4;
+    float h2 = 0.2 * texture2D(stoneTexture, vec2(0.2 * view.x, 0.5)).r + texture2D(stoneTexture, vec2(0.2 + 0.01 * view.x, 0.6)).r - 0.3;
+
+
+    if (view.z < h1) {
+      gl_FragColor = vec4(0.06,0.08,0.06,1);
+    } else if (view.z < h2) {
+      gl_FragColor = vec4(0.04,0.06,0.04,1);
     } else {
       gl_FragColor = vec4(0.2,0.2,0.3,1) * (2.0 - 0.2 * view.x - view.z);
     }
@@ -118,6 +124,32 @@ const raytraceShader = new THREE.ShaderMaterial({
   fragmentShader: raytraceFragmentShader
 })
 
+const mixFragmentShader = `
+varying vec2 coord;
+uniform sampler2D t1, t2, t3;
+const vec3 camera = vec3(0, 0, 0.2);
+const float PI = 3.1415926535;
+void main() {
+  vec2 vxy = vec2(2.0 * coord.x - 1.0, 2.0 * coord.y - 1.0);
+  float vlen = length(vxy);
+  float vth = vlen * PI / 2.0;
+  vec3 view = vec3(vxy.x * sin(vth) / vlen, cos(vth), vxy.y * sin(vth) / vlen);
+  float maxd = camera.z + 1.0;
+  float distance = view.z >= 0.0 ? maxd : min(maxd, -camera.z / view.z);
+  float t = (distance - camera.z) / (maxd - camera.z);
+  t = 2.0 * t;
+  vec4 c1 = texture2D(t1, coord);
+  vec4 c2 = texture2D(t2, coord);
+  vec4 c3 = texture2D(t3, coord);
+  gl_FragColor = t < 1.0 ? mix(c1, c2, t) : mix(c2, c3, t - 1.0);
+}
+`
+
+const mixShader = new THREE.ShaderMaterial({
+  vertexShader,
+  fragmentShader: mixFragmentShader
+})
+
 const scene = new THREE.Scene()
 const plane = new THREE.Mesh(new THREE.PlaneBufferGeometry())
 scene.add(plane)
@@ -149,15 +181,23 @@ export function createTextures(renderer: THREE.WebGLRenderer) {
   const outputBase = smoother.createRenderTarget(size)
   const outputLight = smoother.createRenderTarget(size)
   const outputs = [outputBase, outputLight]
+  const tmp1 = smoother.createRenderTarget(size)
+  const tmp2 = smoother.createRenderTarget(size)
+  const tmp3 = smoother.createRenderTarget(size)
   for (let i = 0; i < 2; i++) {
     renderer.setRenderTarget(tmpoutput)
     render(renderer, raytraceShader, { stoneTexture: stone.texture, baseLight: 1 - i, fireLight: i })
     const output = outputs[i]
-    smoother.smooth2(tmpoutput.texture, 16, output)
+    smoother.smooth2(tmpoutput.texture, 2, tmp1)
+    smoother.smooth2(tmpoutput.texture, 8, tmp2)
+    smoother.smooth2(tmpoutput.texture, 32, tmp3)
+    renderer.setRenderTarget(output)
+    render(renderer, mixShader, { t1: tmp1.texture, t2: tmp2.texture, t3: tmp3.texture })
+    // smoother.smooth2(tmpoutput.texture, 2, output)
     output.texture.minFilter = output.texture.magFilter = THREE.LinearFilter
   }
   renderer.setRenderTarget(renderTargetWas)
-  ;[smoother, randomTarget, noizeTarget, smoothTarget, tmpoutput].forEach(o => o.dispose())
+  ;[smoother, randomTarget, noizeTarget, smoothTarget, tmpoutput, tmp1, tmp2].forEach(o => o.dispose())
   return [outputBase.texture, outputLight.texture] as const
 }
 
