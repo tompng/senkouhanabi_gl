@@ -114,13 +114,13 @@ update(1000)
 let running = false
 document.body.onclick = () => { running = true }
 
-envObject.set(0.4, 0.1)
+envObject.set(0.6, 0.1)
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
   twas = time
   if (running) {
-    envObject.set(0.4, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
+    envObject.set(0.6, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
     const wind = Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)
     setWind({ x: 0.1 * wind * wind })
     ball.update(time)

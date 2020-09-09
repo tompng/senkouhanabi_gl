@@ -26,12 +26,12 @@ void main() {
   vec4 smt = texture2D(smoothTexture, coord + mat2(0.13,0.37,-0.23,0.41) * vec2(xi, yi));
   p += min(h1 * 16.0, 0.3) * smt.xy * vec2(1, 2);
   float h2 = min(32.0 * p.x * (1.0 - p.x), 1.0) * min(16.0 * p.y * (1.0 - p.y), 1.0) - 0.5;
-  float z = h2 * (1.0 + 512.0 * smt.z * smt.z);
+  float z = h2 * (1.0 + 128.0 * smt.z * smt.z);
   vec2 c1 = texture2D(noizeTexture, coord + mat2(0.31,0.27,-0.41,0.29) * vec2(xi, yi)).xy;
   vec2 c2 = texture2D(noizeTexture, coord).xy;
   gl_FragColor.xyz = h2 < 0.0
     ? vec3(0.5) + vec3(1) * c2.x
-    : vec3(0.4) + vec3(2.5,2,2) * c1.x + vec3(0,2,2) * c1.y * c1.y;
+    : vec3(0.4) + vec3(2,1,1) * c1.x + vec3(0,1,1) * c1.y * c1.y + vec3(0.4) * (mod(987.6 * sin(123.4 * xi + 567.8 * yi), 1.0) - 0.5);
   gl_FragColor.a = z;
 }
 `
@@ -113,7 +113,7 @@ void main() {
   vec3 norm = v.a < 0.0 ? vec3(0, 0, 1) : normalize(vec3(-hx, -hy, 1));
   vec3 sphereLight = p - camera;
   gl_FragColor.rgb = v.rgb * max(-dot(norm, normalize(sphereLight)), 0.0) / dot(sphereLight, sphereLight) * vec3(0.32, 0.16, 0.08) * fireLight;
-  vec3 light = normalize(vec3(1,2,3));
+  vec3 light = normalize(vec3(0,0,1));
   gl_FragColor.rgb += v.rgb * max(dot(norm, light), 0.0) * 0.5 * baseLight;
   gl_FragColor.a = 1.0;
 }
@@ -193,7 +193,6 @@ export function createTextures(renderer: THREE.WebGLRenderer) {
     smoother.smooth2(tmpoutput.texture, 32, tmp3)
     renderer.setRenderTarget(output)
     render(renderer, mixShader, { t1: tmp1.texture, t2: tmp2.texture, t3: tmp3.texture })
-    // smoother.smooth2(tmpoutput.texture, 2, output)
     output.texture.minFilter = output.texture.magFilter = THREE.LinearFilter
   }
   renderer.setRenderTarget(renderTargetWas)
