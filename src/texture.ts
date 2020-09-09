@@ -31,7 +31,7 @@ void main() {
   vec2 c2 = texture2D(noizeTexture, coord).xy;
   gl_FragColor.xyz = h2 < 0.0
     ? vec3(0.5) + vec3(1) * c2.x
-    : vec3(0.4) + vec3(2,1,1) * c1.x + vec3(0,1,1) * c1.y * c1.y + vec3(0.4) * (mod(987.6 * sin(123.4 * xi + 567.8 * yi), 1.0) - 0.5);
+    : vec3(0.4) + vec3(2,1,1) * c1.x + vec3(0,1,1) * c1.y * c1.y + vec3(0.2) * (mod(987.6 * sin(123.4 * xi + 567.8 * yi), 1.0) - 0.5);
   gl_FragColor.a = z;
 }
 `

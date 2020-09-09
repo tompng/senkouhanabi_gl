@@ -18,8 +18,10 @@ document.body.onmousemove = e => {
   const width = el.offsetWidth
   const height = el.offsetHeight
   const size = Math.min(width, height)
-  const x = 2.0 * (e.pageX - el.offsetLeft - width / 2) / size
-  const y = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
+  const ox = 2.0 * (e.pageX - el.offsetLeft - width / 2) / size
+  const oy = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
+  const x = Math.max(-1, Math.min(ox, 1))
+  const y = Math.max(-1, Math.min(oy, 1))
   const r = Math.hypot(x, y)
   const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
   mouse.x = x * rscale / r
@@ -114,13 +116,13 @@ update(1000)
 let running = false
 document.body.onclick = () => { running = true }
 
-envObject.set(0.6, 0.1)
+envObject.set(0.3, 0.02)
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
   twas = time
   if (running) {
-    envObject.set(0.6, 0.1 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
+    envObject.set(0.3, 0.02 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
     const wind = Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)
     setWind({ x: 0.1 * wind * wind })
     ball.update(time)
@@ -128,8 +130,9 @@ function animate() {
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
     update(dt)
   }
-  const zth = mouse.y / 2
-  const xyth = -mouse.x / 2 - Math.PI / 2
+  const thscale = 0.8
+  const zth = mouse.y * thscale
+  const xyth = -mouse.x * thscale - Math.PI / 2
   camera.position.x = 0.5 * Math.cos(xyth) * Math.cos(zth)
   camera.position.y = 0.5 * Math.sin(xyth) * Math.cos(zth)
   camera.position.z = 0.5 * Math.sin(zth)
