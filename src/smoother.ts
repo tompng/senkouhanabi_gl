@@ -71,21 +71,6 @@ void main() {
 }
 `
 
-const diffSmoothAddFragmentShader = `
-uniform float delta, k;
-uniform sampler2D baseTexture, smoothTexture;
-varying vec2 coord;
-void main() {
-  vec4 sum = (
-    + texture2D(smoothTexture, coord + vec2(-delta, 0))
-    + texture2D(smoothTexture, coord + vec2(+delta, 0))
-    + texture2D(smoothTexture, coord + vec2(0, -delta))
-    + texture2D(smoothTexture, coord + vec2(0, +delta))
-  );
-  gl_FragColor = 0.25 * k * sum - (1.0 + k) * texture2D(smoothTexture, coord);
-}
-`
-
 const copyDownFragmentShader = `
 uniform float delta;
 uniform sampler2D baseTexture;
@@ -117,6 +102,16 @@ void main() {
 }
 `
 
+function linear(t: THREE.Texture) {
+  t.minFilter = t.magFilter = THREE.LinearFilter
+  return t
+}
+
+function nearest(t: THREE.Texture) {
+  t.minFilter = t.magFilter = THREE.NearestFilter
+  return t
+}
+
 export class Smoother {
   uniforms = {
     delta: { value: 1 / 511 },
@@ -142,10 +137,8 @@ export class Smoother {
   preSmoothShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: preSmoothFragmentShader, ...this.shaderOptions })
   postSmoothShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: postSmoothFragmentShader, ...this.shaderOptions })
   diffSmoothShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: diffSmoothFragmentShader, ...this.shaderOptions })
-  diffSmoothAddShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: diffSmoothAddFragmentShader, ...this.shaderAddOptions })
   copyShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: copyFragmentShader, ...this.shaderOptions })
   copyDownShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: copyDownFragmentShader, ...this.shaderOptions })
-  addShader = new ShaderMaterial({ uniforms: this.uniforms, vertexShader, fragmentShader: copyFragmentShader, ...this.shaderAddOptions })
   wsumShader = new ShaderMaterial({ uniforms: this.wsumUniforms, vertexShader, fragmentShader: wsumFragmentShader, ...this.shaderOptions })
   randomShader = new ShaderMaterial({ uniforms: { seed: { value: 0 }, minValue: { value: 0 }, maxValue: { value: 1 } }, vertexShader, fragmentShader: randomFragmentShader, ...this.shaderOptions })
   renderTargets: Record<string, THREE.WebGLRenderTarget | undefined> = {}
@@ -172,6 +165,7 @@ export class Smoother {
     const renderTargetWas = this.renderer.getRenderTarget()
     const tmp = this.getRenderTarget('tmp', this.size)
     this._smooth(input, output, tmp, k, 0)
+    this._smooth(input, output, tmp, k, 0, { multiPass: true })
     input.minFilter = minFilterWas
     input.magFilter = magFilterWas
     this.renderer.setRenderTarget(renderTargetWas)
@@ -196,48 +190,34 @@ export class Smoother {
     this.renderer.setRenderTarget(renderTargetWas)
     return output.texture
   }
-  _smooth(input: THREE.Texture, output: THREE.WebGLRenderTarget, tmp: THREE.WebGLRenderTarget, k: number, step: number) {
-    const render = (material: THREE.Material, target: THREE.WebGLRenderTarget) => {
+  _smooth(input: THREE.Texture, output: THREE.WebGLRenderTarget, tmp: THREE.WebGLRenderTarget, k: number, step: number, option?: { multiPass?: boolean; useInitial?: boolean }) {
+    const render = (material: THREE.ShaderMaterial, target: THREE.WebGLRenderTarget, uniforms: Record<string, THREE.Texture | number>) => {
+      for (const key in uniforms) material.uniforms[key] = { value: uniforms[key] }
+      material.uniforms
       this.plane.material = material
       this.renderer.setRenderTarget(target)
       this.renderer.render(this.scene, this.camera)
     }
-    function linear(t: THREE.Texture) {
-      t.minFilter = t.magFilter = THREE.LinearFilter
-      return t
-    }
-    function nearest(t: THREE.Texture) {
-      t.minFilter = t.magFilter = THREE.NearestFilter
-      return t
-    }
     const size = this.size >> step
-    this.uniforms.delta.value = 1 / (size - 1)
-    this.uniforms.k.value = k
-    this.uniforms.baseTexture.value = nearest(input)
-    render(this.preSmoothShader, tmp)
+    const delta = 1 / (size - 1)
+    if (option?.multiPass) {
+      render(this.postSmoothShader, tmp, { k, delta, baseTexture: nearest(input), smoothTexture: nearest(output.texture)})
+      render(this.copyShader, output, { baseTexture: nearest(tmp.texture) })
+    } else {
+      render(this.preSmoothShader, output, { k, delta, baseTexture: nearest(input) })
+    }
     if (size > 4 && size % 2 == 0) {
       const i2 = this.getRenderTarget(`i${step}`, size / 2)
       const o2 = this.getRenderTarget(`o${step}`, size / 2)
       const t2 = this.getRenderTarget(`t${step}`, size / 2)
-      this.uniforms.baseTexture.value = linear(input)
-      this.uniforms.delta.value = 1 / (size / 2 - 1) / 4
-      render(this.copyDownShader, o2)
-      this.uniforms.baseTexture.value = linear(tmp.texture)
-      this.uniforms.delta.value = 1 / (size / 2 - 1) / 4
-      render(this.copyDownShader, t2)
-      this.uniforms.smoothTexture.value = nearest(t2.texture)
-      this.uniforms.baseTexture.value = nearest(o2.texture)
-      this.uniforms.delta.value = 1 / (size / 2 - 1)
-      render(this.diffSmoothShader, i2)
+      const delta2 = 1 / (size / 2 - 1) / 4
+      render(this.copyDownShader, o2, { delta: delta2, baseTexture: linear(input) })
+      render(this.copyDownShader, t2, { delta: delta2, baseTexture: linear(output.texture)})
+      render(this.diffSmoothShader, i2, { k, delta: 1 / (size / 2 - 1), smoothTexture: nearest(t2.texture), baseTexture: nearest(o2.texture) })
       this._smooth(i2.texture, o2, t2, k / 4, step + 1)
-      this.uniforms.baseTexture.value = linear(o2.texture)
-      render(this.addShader, tmp)
+      render(this.wsumShader, tmp, { texture1: linear(o2.texture), texture2: linear(output.texture), weight1: 1, weight2: 1 })
     }
-    this.uniforms.delta.value = 1 / (size - 1)
-    this.uniforms.k.value = k
-    this.uniforms.baseTexture.value = nearest(input)
-    this.uniforms.smoothTexture.value = nearest(tmp.texture)
-    render(this.postSmoothShader, output)
+    render(this.postSmoothShader, output, { k, delta, baseTexture: nearest(input), smoothTexture: nearest(tmp.texture)})
   }
   createRenderTarget(size: number) {
     const option: THREE.WebGLRenderTargetOptions = {
@@ -258,13 +238,11 @@ export class Smoother {
   }
 
   dispose() {
-    this.addShader.dispose()
     this.copyShader.dispose()
     this.copyDownShader.dispose()
     this.preSmoothShader.dispose()
     this.postSmoothShader.dispose()
     this.diffSmoothShader.dispose()
-    this.diffSmoothAddShader.dispose()
     this.wsumShader.dispose()
     this.randomShader.dispose()
     Object.values(this.renderTargets).forEach(t => t?.dispose())
