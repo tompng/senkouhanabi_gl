@@ -116,7 +116,7 @@ export class Curve {
   update({ x, y, z }: { x: number; y: number; z: number }) {
     function r(p: P3) {
       const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
-      return 0.0004 + Math.abs(distance - 0.5) * 0.02 * distance
+      return 0.0003 + Math.abs(distance - 0.4) * 0.015 * distance
     }
     this.uniforms.wind.value.x = wind.x
     this.uniforms.wind.value.y = wind.y

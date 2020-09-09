@@ -89,7 +89,7 @@ function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: nu
   curve.v.y = v.y
   curve.v.z = v.z
   const c = w * t * 4
-  curve.color.setRGB(0.8, 0.4, 0.2)
+  curve.color.setRGB(0.6, 0.3, 0.15)
   curve.brightness0 = 1
   curve.brightness1 = 0
   curve.brightness2 = 0
@@ -133,9 +133,9 @@ function animate() {
   const thscale = 0.8
   const zth = mouse.y * thscale
   const xyth = -mouse.x * thscale - Math.PI / 2
-  camera.position.x = 0.5 * Math.cos(xyth) * Math.cos(zth)
-  camera.position.y = 0.5 * Math.sin(xyth) * Math.cos(zth)
-  camera.position.z = 0.5 * Math.sin(zth)
+  camera.position.x = 0.4 * Math.cos(xyth) * Math.cos(zth)
+  camera.position.y = 0.4 * Math.sin(xyth) * Math.cos(zth)
+  camera.position.z = 0.4 * Math.sin(zth)
   camera.lookAt(new THREE.Vector3(-mouse.x / 10, 0, mouse.y / 10))
   curves.update(camera.position)
   renderer.setRenderTarget(target)
