@@ -1,0 +1,13 @@
+{
+  "name": "線香花火",
+  "display": "standalone",
+  "start_url": "index.html",
+  "icons": [
+    {
+      "src": "images/icon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "splash_pages": null
+}

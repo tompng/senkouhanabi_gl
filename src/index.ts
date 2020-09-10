@@ -50,7 +50,6 @@ document.body.onpointerdown = e => {
   }
   document.body.addEventListener('pointermove', move)
   document.body.addEventListener('pointerup', up)
-
 }
 document.body.onmousemove = e => {
   const o = touchPosition(e)
