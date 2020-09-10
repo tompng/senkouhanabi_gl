@@ -23,6 +23,12 @@ function touchPosition(e: { pageX: number; pageY: number }) {
   const y = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
   return { x, y }
 }
+function setMouse(x: number, y: number) {
+  const r = Math.hypot(x, y)
+  const rscale = r < 1 ? r : (1 + (1 - Math.exp(3 * (1 - r))) / 3)
+  mouse.x = x * rscale / r
+  mouse.y = y * rscale / r
+}
 document.body.onpointerdown = e => {
   e.preventDefault()
   let prev = touchPosition(e)
@@ -34,10 +40,7 @@ document.body.onpointerdown = e => {
     const current = touchPosition(e)
     x += current.x - prev.x
     y += current.y - prev.y
-    const r = Math.hypot(x, y)
-    const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
-    mouse.x = x * rscale / r
-    mouse.y = y * rscale / r
+    setMouse(x, y)
     prev = current
   }
   function up(e: PointerEvent) {
@@ -53,10 +56,7 @@ document.body.onmousemove = e => {
   const o = touchPosition(e)
   const x = Math.max(-1, Math.min(o.x, 1))
   const y = Math.max(-1, Math.min(o.y, 1))
-  const r = Math.hypot(x, y)
-  const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
-  mouse.x = x * rscale / r
-  mouse.y = y * rscale / r
+  setMouse(x, y)
 }
 const envObject = new Environment(...createTextures(renderer))
 scene.add(envObject.mesh)
