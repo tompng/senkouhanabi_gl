@@ -13,16 +13,47 @@ const curves = new CurveManager(scene)
 
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
-const mouse = { x: 0, y: 0 }
-document.body.onmousemove = e => {
+const mouse = { x: 0, y: 0, down: false }
+function touchPosition(e: { pageX: number; pageY: number }) {
   const el = renderer.domElement
   const width = el.offsetWidth
   const height = el.offsetHeight
   const size = Math.min(width, height)
-  const ox = 2.0 * (e.pageX - el.offsetLeft - width / 2) / size
-  const oy = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
-  const x = Math.max(-1, Math.min(ox, 1))
-  const y = Math.max(-1, Math.min(oy, 1))
+  const x = 2.0 * (e.pageX - el.offsetLeft - width / 2) / size
+  const y = 2.0 * (e.pageY - el.offsetTop - height / 2) / size
+  return { x, y }
+}
+document.body.onpointerdown = e => {
+  e.preventDefault()
+  let prev = touchPosition(e)
+  let { x, y } = mouse
+  const id = e.pointerId
+  console.log('pd', e)
+  const move = (e: PointerEvent) => {
+    e.preventDefault()
+    if (e.pointerId !== id) return
+    const current = touchPosition(e)
+    x += current.x - prev.x
+    y += current.y - prev.y
+    const r = Math.hypot(x, y)
+    const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
+    mouse.x = x * rscale / r
+    mouse.y = y * rscale / r
+    prev = current
+  }
+  function up(e: PointerEvent) {
+    if (e.pointerId !== id) return
+    document.body.removeEventListener('pointermove', move)
+    document.body.removeEventListener('pointerup', up)  
+  }
+  document.body.addEventListener('pointermove', move)
+  document.body.addEventListener('pointerup', up)
+
+}
+document.body.onmousemove = e => {
+  const o = touchPosition(e)
+  const x = Math.max(-1, Math.min(o.x, 1))
+  const y = Math.max(-1, Math.min(o.y, 1))
   const r = Math.hypot(x, y)
   const rscale = r < 1 ? r : (1 + (1 - Math.exp(2 * (1 - r))) / 2)
   mouse.x = x * rscale / r
