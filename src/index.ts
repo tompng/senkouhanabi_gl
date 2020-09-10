@@ -28,7 +28,6 @@ document.body.onpointerdown = e => {
   let prev = touchPosition(e)
   let { x, y } = mouse
   const id = e.pointerId
-  console.log('pd', e)
   const move = (e: PointerEvent) => {
     e.preventDefault()
     if (e.pointerId !== id) return
@@ -161,7 +160,7 @@ function animate() {
     setWind({ x: wind })
     ball.update(time)
     windEffect.x += windEffect.vx * 0.1
-    windEffect.vx += (wind * Math.random() - windEffect.x - 0.5 * windEffect.vx) * 0.1
+    windEffect.vx += (wind * Math.random() - 0.5 * windEffect.x - 0.5 * windEffect.vx) * 0.2
     const we = windEffect.x
     const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 2 - 0.04 * we / 2 }
     ball.mesh.position.x = wm.x
