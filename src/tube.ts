@@ -128,7 +128,7 @@ export class Curve {
     this.uniforms.brightness0.value = this.brightness0
     this.uniforms.brightness1.value = this.brightness1
     this.uniforms.brightness2.value = this.brightness2
-    this.mesh.geometry = cachedCylinderGeometry(32, 16)
+    this.mesh.geometry = cachedCylinderGeometry(16, 12)
   }
 }
 
