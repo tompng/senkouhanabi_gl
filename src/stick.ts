@@ -1,6 +1,4 @@
 import * as THREE from 'three'
-import { SrcAlphaFactor } from 'three'
-
 
 const cylinderGeometry = new THREE.CylinderBufferGeometry(1, 1, 1, 12, 128)
 const vertexShader = `
@@ -27,7 +25,7 @@ void main() {
   vec3 view = normalize(vPosition - cameraPosition);
   vec3 norm = normalize(vNormal);
   float c = max(0.0, dot(view, norm));
-  gl_FragColor.rgb = alpha * alpha * (vec3(0.1 * c * c) + c * c * vec3(0.4,0.2,0.1) / (1.0 + 512.0 * vPosition.z * vPosition.z));
+  gl_FragColor.rgb = alpha * alpha * (vec3(0.05 * c * c) + c * c * vec3(0.4,0.2,0.1) / (1.0 + 512.0 * vPosition.z * vPosition.z));
   gl_FragColor.a = 1.0;
 }
 `
@@ -45,8 +43,6 @@ export class Stick {
         fragmentShader,
         blending: THREE.AdditiveBlending,
         depthTest: false
-        // blendSrc: THREE.OneFactor,
-        // blendDst: THREE.OneFactor
       })
     )
 
