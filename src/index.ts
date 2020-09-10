@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { Ball } from './ball'
 import { createTextures, Environment } from './texture'
+import { Stick } from './stick'
 const renderer = new THREE.WebGLRenderer()
 const size = 1024
 renderer.setSize(size, size)
@@ -31,6 +32,7 @@ const envObject = new Environment(...createTextures(renderer))
 scene.add(envObject.mesh)
 const ball = new Ball()
 scene.add(ball.mesh)
+scene.add(new Stick().mesh)
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
