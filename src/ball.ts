@@ -14,6 +14,7 @@ void main() {
     + sin(3.19 * normal.yzx - 2.57 * normal.zxy + 8.31 * time)
     + sin(4.31 * normal.zxy - 3.43 * normal.xyz + 7.23 * time)
   );
+  vPosition = (modelMatrix * vec4(vPosition, 1)).xyz;
   gl_Position = projectionMatrix * viewMatrix * vec4(vPosition, 1);
 }
 `

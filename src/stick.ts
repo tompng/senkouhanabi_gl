@@ -34,10 +34,13 @@ void main() {
 
 export class Stick {
   mesh: THREE.Mesh
+  windMove: THREE.Vector3
   constructor() {
+    this.windMove = new THREE.Vector3()
     this.mesh = new THREE.Mesh(
       cylinderGeometry,
       new THREE.ShaderMaterial({
+        uniforms: { windMove: { value: this.windMove } },
         vertexShader,
         fragmentShader,
         blending: THREE.AdditiveBlending,

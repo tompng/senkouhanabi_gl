@@ -31,8 +31,9 @@ document.body.onmousemove = e => {
 const envObject = new Environment(...createTextures(renderer))
 scene.add(envObject.mesh)
 const ball = new Ball()
+const stick = new Stick()
 scene.add(ball.mesh)
-scene.add(new Stick().mesh)
+scene.add(stick.mesh)
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
@@ -102,22 +103,22 @@ function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: nu
 let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
-function add() {
+function add(c: { x: number; y: number; z: number }) {
   const v = sphereRandom()
   const vr = 4
   const r = 0.01
-  sparks.push({ p: { x: r * v.x, y: r * v.y, z: r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.02 + 0.04 * Math.random(), w: 1 })
+  sparks.push({ p: { x: c.x + r * v.x, y: c.y + r * v.y, z: c.z + r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.02 + 0.04 * Math.random(), w: 1 })
 }
 function update(dt: number) {
   const sparks2: SparkElement[] = []
   sparks.forEach(sp => nextSpark(sp, dt, sparks2))
   sparks = sparks2
 }
-for (let i = 0; i < 20; i++) add()
+for (let i = 0; i < 20; i++) add({ x: 0, y: 0, z: 0 })
 update(1000)
 let running = false
 document.body.onclick = () => { running = true }
-
+const windEffect = { x: 0, vx: 0 }
 envObject.set(0.3, 0.02)
 function animate() {
   const time = performance.now() / 1000
@@ -125,11 +126,20 @@ function animate() {
   twas = time
   if (running) {
     envObject.set(0.3, 0.02 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
-    const wind = Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)
-    setWind({ x: 0.1 * wind * wind })
+    const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
+    setWind({ x: wind })
     ball.update(time)
+    windEffect.x += windEffect.vx * 0.1
+    windEffect.vx += (wind * Math.random() - windEffect.x - 0.5 * windEffect.vx) * 0.1
+    const we = windEffect.x
+    const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 2 - 0.04 * we / 2 }
+    ball.mesh.position.x = wm.x
+    ball.mesh.position.z = wm.z
+    stick.windMove.x = wm.x
+    stick.windMove.z = wm.z
+
     curves.reset()
-    for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add()
+    for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add(wm)
     update(dt)
   }
   const thscale = 0.8
