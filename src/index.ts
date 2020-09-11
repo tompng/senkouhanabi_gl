@@ -25,22 +25,22 @@ function touchPosition(e: { pageX: number; pageY: number }) {
 }
 function setMouse(x: number, y: number) {
   const r = Math.hypot(x, y)
-  const rscale = r < 1 ? r : (1 + (1 - Math.exp(3 * (1 - r))) / 3)
-  mouse.x = x * rscale / r
-  mouse.y = y * rscale / r
+  const maxR = 4 / 3
+  const rscale = r < maxR ? 1 : maxR / r
+  mouse.x = x * rscale
+  mouse.y = y * rscale
 }
 document.body.onpointerdown = e => {
   e.preventDefault()
   let prev = touchPosition(e)
-  let { x, y } = mouse
   const id = e.pointerId
   const move = (e: PointerEvent) => {
     e.preventDefault()
     if (e.pointerId !== id) return
     const current = touchPosition(e)
-    x += current.x - prev.x
-    y += current.y - prev.y
-    setMouse(x, y)
+    const dx = current.x - prev.x
+    const dy = current.y - prev.y
+    setMouse(mouse.x + dx, mouse.y + dy)
     prev = current
   }
   function up(e: PointerEvent) {
