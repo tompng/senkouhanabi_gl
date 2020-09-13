@@ -25,8 +25,8 @@ void main() {
   vec3 view = normalize(vPosition - cameraPosition);
   vec3 norm = normalize(vNormal);
   float c = max(0.0, dot(view, norm));
-  gl_FragColor.rgb = alpha * alpha * (vec3(0.05 * c * c) + c * c * vec3(0.4,0.2,0.1) / (1.0 + 512.0 * vPosition.z * vPosition.z));
-  gl_FragColor.a = 1.0;
+  gl_FragColor.rgb = vec3(0.05) + vec3(0.4,0.2,0.1) / (1.0 + 512.0 * vPosition.z * vPosition.z);
+  gl_FragColor.a = alpha * alpha * c * c;
 }
 `
 
@@ -41,7 +41,10 @@ export class Stick {
         uniforms: { windMove: { value: this.windMove } },
         vertexShader,
         fragmentShader,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.CustomBlending,
+        blendSrc: THREE.SrcAlphaFactor,
+        blendDst: THREE.OneMinusSrcAlphaFactor,
+        depthWrite: false,
         depthTest: false
       })
     )

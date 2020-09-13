@@ -63,8 +63,10 @@ const envObject = new Environment(...createTextures(renderer))
 backgroundScene.add(envObject.mesh)
 const ball = new Ball()
 const stick = new Stick()
-ballStickScene.add(ball.mesh)
 ballStickScene.add(stick.mesh)
+ballStickScene.add(ball.mesh)
+stick.mesh.renderOrder = 1
+ball.mesh.renderOrder = 2
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
@@ -181,6 +183,7 @@ function animate() {
   renderer.setRenderTarget(target)
   renderer.autoClear = false
   renderer.clearColor()
+  renderer.clearDepth()
   renderer.render(backgroundScene, camera)
   curves.update(camera.position, ball.mesh.position)
   curves.setBackVisible()
