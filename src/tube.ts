@@ -93,6 +93,7 @@ export class Curve {
   readonly p: THREE.Vector3
   readonly v: THREE.Vector3
   readonly color: THREE.Color
+  front = true
   brightness0 = 0
   brightness1 = 0
   brightness2 = 0
@@ -113,11 +114,12 @@ export class Curve {
       depthWrite: false
     })
   }
-  update({ x, y, z }: { x: number; y: number; z: number }) {
+  update({ x, y, z }: { x: number; y: number; z: number }, focusDistance: number) {
     function r(p: P3) {
       const distance = Math.hypot(p.x - x, p.y - y, p.z - z)
-      return 0.0003 + Math.abs(distance - 0.4) * 0.015 * distance
+      return 0.0003 + Math.abs(distance - focusDistance) * 0.015 * distance
     }
+    this.front = Math.hypot(this.p.x - x, this.p.y - y, this.p.z - z) < focusDistance
     this.uniforms.wind.value.x = wind.x
     this.uniforms.wind.value.y = wind.y
     this.uniforms.wind.value.z = wind.z
@@ -188,7 +190,14 @@ export class CurveManager {
     this.scene.add(curve.mesh)
     return curve
   }
-  update(cameraPosition: { x: number; y: number; z: number }) {
-    for (let i = 0; i < this.activeCount; i++) this.curves[i].update(cameraPosition)
+  update(camera: P3, focus: P3) {
+    const distance = Math.hypot(focus.x - camera.x, focus.y - camera.y, focus.z - camera.z)
+    for (let i = 0; i < this.activeCount; i++) this.curves[i].update(camera, distance)
+  }
+  setBackVisible() {
+    this.curves.forEach(c => { c.mesh.visible = !c.front })
+  }
+  setFrontVisible() {
+    this.curves.forEach(c => { c.mesh.visible = c.front })
   }
 }

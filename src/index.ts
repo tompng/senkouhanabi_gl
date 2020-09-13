@@ -1,6 +1,6 @@
 import { Mesh } from 'three'
 import * as THREE from 'three'
-import { sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
+import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { Ball } from './ball'
 import { createTextures, Environment } from './texture'
 import { Stick } from './stick'
@@ -8,6 +8,8 @@ const renderer = new THREE.WebGLRenderer()
 const size = 1024
 renderer.setSize(size, size)
 const scene = new THREE.Scene()
+const backgroundScene = new THREE.Scene()
+const ballStickScene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
 const curves = new CurveManager(scene)
 
@@ -58,11 +60,11 @@ document.body.onmousemove = e => {
   setMouse(x, y)
 }
 const envObject = new Environment(...createTextures(renderer))
-scene.add(envObject.mesh)
+backgroundScene.add(envObject.mesh)
 const ball = new Ball()
 const stick = new Stick()
-scene.add(ball.mesh)
-scene.add(stick.mesh)
+ballStickScene.add(ball.mesh)
+ballStickScene.add(stick.mesh)
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
@@ -73,8 +75,6 @@ const targetRenderScene = new THREE.Scene()
 const targetRenderCamera = new THREE.Camera()
 targetRenderMesh.scale.x = targetRenderMesh.scale.y = 2
 targetRenderScene.add(targetRenderMesh)
-
-type P3 = { x: number; y: number; z: number }
 
 type SparkElement = {
   p: P3
@@ -178,11 +178,19 @@ function animate() {
   camera.position.y = 0.4 * Math.sin(xyth) * Math.cos(zth)
   camera.position.z = 0.4 * Math.sin(zth)
   camera.lookAt(new THREE.Vector3(-mouse.x / 10, 0, mouse.y / 10))
-  curves.update(camera.position)
   renderer.setRenderTarget(target)
+  renderer.autoClear = false
+  renderer.clearColor()
+  renderer.render(backgroundScene, camera)
+  curves.update(camera.position, ball.mesh.position)
+  curves.setBackVisible()
+  renderer.render(scene, camera)
+  renderer.render(ballStickScene, camera)
+  curves.setFrontVisible()
   renderer.render(scene, camera)
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
+  renderer.autoClear = true
   requestAnimationFrame(animate)
 }
 animate()
