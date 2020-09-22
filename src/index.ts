@@ -64,7 +64,7 @@ backgroundScene.add(envObject.mesh)
 const ball = new Ball()
 const stick = new Stick()
 ballStickScene.add(stick.mesh)
-ballStickScene.add(ball.mesh)
+// ballStickScene.add(ball.mesh)
 stick.mesh.renderOrder = 1
 ball.mesh.renderOrder = 2
 const target = new THREE.WebGLRenderTarget(size, size, {
