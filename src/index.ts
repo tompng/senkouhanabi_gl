@@ -172,6 +172,7 @@ function animate() {
     curves.reset()
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add(wm)
     update(dt)
+    stick.setPhase(time * 0.4 % 1.0)
   }
   const thscale = 0.8
   const zth = mouse.y * thscale
