@@ -24,14 +24,15 @@ vec2 stickRZFunc(float t) {
   return vec2(stickR * r, (-t - 2.0) * 2.3 * ballR - 2.0 * ballR);
 }
 vec2 rzFunc(float t) {
-  return mix(stickRZFunc(t), ballRZFunc(t), phase);
+  return mix(stickRZFunc(t), ballRZFunc(t), phase * phase);
 }
 void main() {
   vec2 xy = position.zx;
   float z = position.y;
   float r;
   vNormal = normal.zxy;
-  vec2 wind = vec2(0, 0);
+  vec2 wave = vec2(0, 0);
+  vec2 wavez = vec2(0, 0);
   if (z > 0.0) {
     z += ballR * 2.0;
     r = stickR;
@@ -46,10 +47,14 @@ void main() {
     vNormal = normalize(vec3(vNormal.xy, -dr));
     r = b.x;
     z = b.y;
-    wind = pow(phase * (1.0 - phase), 2.0) * stickR * 4.0 * (sin(vec2(1.7,1.9)*t-2.3*phase)+sin(vec2(2.3,-2.5)*t-1.7*phase)) * pow(max(t+1.0,0.0),2.0);
+    float w = stickR * 6.0 * pow(phase * (1.0 - phase), 2.0) * pow(max(t+1.0, 0.0), 2.0);
+    vec2 w1 = vec2(1.7, 1.9), w2 = vec2(-2.5, -3.1);
+    vec2 t1 = w1 * t - 5.3 * phase, t2 = w2 * t - 3.7 * phase;
+    wave = w * (sin(t1) + sin(t2));
+    wavez = w * (w1 * cos(t1) + w2 * cos(t2)) / db.y;
   }
   vec2 c = 0.001 * (sin(vec2(18,17)*z)-sin(vec2(23,31)*z)+sin(vec2(35,57)*z)-sin(vec2(51,43)*z));
-  vPosition = vec3(wind + r * xy, z);// + windMove * exp(-4.0 * z);
+  vPosition = vec3(wave + r * xy + c, z - r * dot(wavez, xy)) + windMove * exp(-4.0 * z) + vec3(0, 0, dot(windMove.xy, r * xy) * 4.0 * exp(-4.0 * z));
   gl_Position = projectionMatrix * viewMatrix * vec4(vPosition, 1);
 }
 `
@@ -71,7 +76,7 @@ void main() {
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
-  uniforms = { windMove: { value: new THREE.Vector3 }, phase: { value: 0 } }
+  uniforms = { windMove: { value: new THREE.Vector3 }, phase: { value: 1 } }
   constructor() {
     this.windMove = this.uniforms.windMove.value
     this.mesh = new THREE.Mesh(

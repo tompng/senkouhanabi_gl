@@ -1,4 +1,4 @@
-import { Mesh } from 'three'
+import { Mesh, TrianglesDrawMode } from 'three'
 import * as THREE from 'three'
 import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { Ball } from './ball'
@@ -148,6 +148,7 @@ function update(dt: number) {
 for (let i = 0; i < 20; i++) add({ x: 0, y: 0, z: 0 })
 update(1000)
 let running = false
+let time0: number | null = null
 document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
 envObject.set(0.3, 0.02)
@@ -168,11 +169,13 @@ function animate() {
     ball.mesh.position.z = wm.z
     stick.windMove.x = wm.x
     stick.windMove.z = wm.z
-
+    if (time0 == null) time0 = time
+    const phase = 1 - Math.exp(-0.6 * (time - time0))
+    stick.setPhase(phase)
     curves.reset()
-    for(let i = 0; i < 10; i++) if (Math.random() < 0.2) add(wm)
+    for(let i = 0; i < 10; i++) if (Math.random() < (phase - 0.6) / 2) add(wm)
     update(dt)
-    stick.setPhase(time * 0.4 % 1.0)
+    if (time0 == null) time0 = TrianglesDrawMode
   }
   const thscale = 0.8
   const zth = mouse.y * thscale
