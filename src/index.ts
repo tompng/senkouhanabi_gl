@@ -1,7 +1,6 @@
 import { Mesh, TrianglesDrawMode } from 'three'
 import * as THREE from 'three'
 import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
-import { Ball } from './ball'
 import { createTextures, Environment } from './texture'
 import { Stick } from './stick'
 const renderer = new THREE.WebGLRenderer()
@@ -61,12 +60,9 @@ document.body.onmousemove = e => {
 }
 const envObject = new Environment(...createTextures(renderer))
 backgroundScene.add(envObject.mesh)
-const ball = new Ball()
 const stick = new Stick()
 ballStickScene.add(stick.mesh)
-// ballStickScene.add(ball.mesh)
 stick.mesh.renderOrder = 1
-ball.mesh.renderOrder = 2
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
   magFilter: THREE.NearestFilter,
@@ -152,6 +148,7 @@ let time0: number | null = null
 document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
 envObject.set(0.3, 0.02)
+const focusPosition = { x: 0, y: 0, z: 0 }
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
@@ -160,18 +157,18 @@ function animate() {
     envObject.set(0.3, 0.02 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
     setWind({ x: wind })
-    ball.update(time)
     windEffect.x += windEffect.vx * 0.1
     windEffect.vx += (wind * Math.random() - 0.5 * windEffect.x - 0.5 * windEffect.vx) * 0.2
     const we = windEffect.x
     const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 2 - 0.04 * we / 2 }
-    ball.mesh.position.x = wm.x
-    ball.mesh.position.z = wm.z
+    focusPosition.x = wm.x
+    focusPosition.y = wm.y
+    focusPosition.z = wm.z
     stick.windMove.x = wm.x
     stick.windMove.z = wm.z
     if (time0 == null) time0 = time
     const phase = 1 - Math.exp(-0.6 * (time - time0))
-    stick.setPhase(phase)
+    stick.setPhase(phase, time)
     curves.reset()
     for(let i = 0; i < 10; i++) if (Math.random() < (phase - 0.6) / 2) add(wm)
     update(dt)
@@ -189,7 +186,7 @@ function animate() {
   renderer.clearColor()
   renderer.clearDepth()
   renderer.render(backgroundScene, camera)
-  curves.update(camera.position, ball.mesh.position)
+  curves.update(camera.position, focusPosition)
   curves.setBackVisible()
   renderer.render(scene, camera)
   renderer.render(ballStickScene, camera)
