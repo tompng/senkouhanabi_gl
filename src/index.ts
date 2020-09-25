@@ -95,8 +95,21 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
     return
   }
   if (w < 1/16) return
-  for (let i = 0; i < 10; i++) {
-    const v3 = sphereRandom()
+  const rands: P3[] = []
+  const numRands = 2 + 18 * Math.random()
+  for (let i = 0; i < numRands; i++) rands.push(sphereRandom())
+  const avRand = { x: 0, y: 0, z: 0 }
+  rands.forEach(({ x, y, z }) => {
+    avRand.x += x / rands.length
+    avRand.y += y / rands.length
+    avRand.z += z / rands.length
+  })
+  rands.forEach(p => {
+    p.x -= avRand.x
+    p.y -= avRand.y
+    p.z -= avRand.z
+  })
+  rands.forEach(v3 => {
     const vr = 4
     const life2 = life - t
     const at2 = Math.min(life2, 0.02 + 2 * life2 * Math.random())
@@ -107,9 +120,9 @@ function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: Spark
       at: at2,
       w: w / 2
     }, time - t, out)
-  }
+  })
 }
-
+let globalSparkBrightness = 1 / 4
 function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: number, friction: number) {
   const curve = curves.get()
   curve.p.x = p.x
@@ -119,7 +132,7 @@ function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: nu
   curve.v.y = v.y
   curve.v.z = v.z
   const c = w * t * 4
-  curve.color.setRGB(0.6, 0.3, 0.15)
+  curve.color.setRGB(0.6 * globalSparkBrightness, 0.3 * globalSparkBrightness, 0.15 * globalSparkBrightness)
   curve.brightness0 = 1
   curve.brightness1 = 0
   curve.brightness2 = 0
@@ -154,6 +167,7 @@ function animate() {
   const dt = time - twas
   twas = time
   if (running) {
+    globalSparkBrightness = 1
     envObject.set(0.3, 0.02 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
     setWind({ x: wind })
