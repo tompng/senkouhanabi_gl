@@ -1,4 +1,4 @@
-import { Mesh, TrianglesDrawMode } from 'three'
+import { Mesh } from 'three'
 import * as THREE from 'three'
 import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { createTextures, Environment } from './texture'
@@ -160,15 +160,14 @@ let running = false
 let time0: number | null = null
 document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
-envObject.set(0.3, 0.02)
 const focusPosition = { x: 0, y: 0, z: 0 }
+let floorLighting = 0
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
   twas = time
   if (running) {
     globalSparkBrightness = 1
-    envObject.set(0.3, 0.02 + 0.005 * (Math.sin(29.7 * time) + Math.sin(17.3 * time) + Math.sin(19.3 * time)))
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
     setWind({ x: wind })
     windEffect.x += windEffect.vx * 0.1
@@ -184,9 +183,9 @@ function animate() {
     const phase = 1 - Math.exp(-0.6 * (time - time0))
     stick.setPhase(phase, time)
     curves.reset()
-    for(let i = 0; i < 10; i++) if (Math.random() < (phase - 0.6) / 2) add(wm)
+    const rnd = Math.max(0, Math.min((time - time0 - 2) * 0.1, 1))
+    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add(wm)
     update(dt)
-    if (time0 == null) time0 = TrianglesDrawMode
   }
   const thscale = 0.8
   const zth = mouse.y * thscale
@@ -201,6 +200,9 @@ function animate() {
   renderer.clearDepth()
   renderer.render(backgroundScene, camera)
   curves.update(camera.position, focusPosition)
+  const fl = 0.01 + globalSparkBrightness * 0.002 * Math.sqrt(curves.activeCount)
+  floorLighting = floorLighting * 0.9 + 0.1 * fl
+  envObject.set(0.4, floorLighting)
   curves.setBackVisible()
   renderer.render(scene, camera)
   renderer.render(ballStickScene, camera)
