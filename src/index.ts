@@ -193,11 +193,13 @@ function animate() {
     stick.windMove.x = wm.x
     stick.windMove.z = wm.z
     if (time0 == null) time0 = time
-    const phase = 1 - Math.exp(-0.6 * (time - time0))
-    stick.setPhase(phase, time)
+    const t = time - time0
+    const phase = 1 - Math.exp(-0.6 * t)
+    const ballZ = Math.min(0.005 * (Math.sqrt(1 + t * t) - 1), 0.1)
+    stick.setPhase(phase, time, ballZ)
     curves.reset()
     const rnd = Math.max(0, Math.min((time - time0 - 2) * 0.1, 1))
-    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add(wm)
+    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add({ ...wm, z: wm.z + ballZ })
     update(dt)
   }
   const thscale = 0.8

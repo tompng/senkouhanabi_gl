@@ -4,7 +4,7 @@ const cylinderGeometry = new THREE.CylinderBufferGeometry(1, 1, 2, 12, 128)
 const vertexShader = `
 varying vec3 vNormal, vPosition;
 uniform vec3 windMove;
-uniform float phase, time;
+uniform float phase, time, ballZ;
 varying float ttt, oscillationColor;
 const float stickR = 0.0025;
 const float ballR = 0.006;
@@ -33,20 +33,20 @@ void main() {
   vNormal = normal.zxy;
   vec2 wave = vec2(0, 0);
   vec2 wavez = vec2(0, 0);
-  if (z > 0.0) {
+  if (z > ballZ) {
     z += ballR * 2.0;
     r = stickR;
     ttt = 0.0;
   } else {
-    float t = -2.0 - 3.0 * z;
-    ttt = clamp(2.0 + t, 0.0, 1.0);
+    float t = -2.0 - 3.0 * (z - ballZ) / (1.0 + ballZ);
+    ttt = clamp(1.75 + t, 0.0, 1.0);
     vec2 b = rzFunc(t);
     float delta = 0.01;
     vec2 db = (b - rzFunc(t-delta)) / delta;
     float dr = db.x / db.y;
     vNormal = normalize(vec3(vNormal.xy, -dr));
     r = b.x;
-    z = b.y;
+    z = ballZ + b.y;
     float w = stickR * 6.0 * pow(phase * (1.0 - phase), 2.0) * pow(max(t+1.0, 0.0), 2.0);
     vec2 w1 = vec2(1.7, 1.9), w2 = vec2(-2.5, -3.1);
     vec2 t1 = w1 * t - 5.3 * phase, t2 = w2 * t - 3.7 * phase;
@@ -87,7 +87,7 @@ void main() {
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
-  uniforms = { windMove: { value: new THREE.Vector3 }, phase: { value: 1 }, time: { value: 0 } }
+  uniforms = { windMove: { value: new THREE.Vector3 }, phase: { value: 1 }, time: { value: 0 }, ballZ: { value: 0 } }
   constructor() {
     this.windMove = this.uniforms.windMove.value
     this.mesh = new THREE.Mesh(
@@ -104,8 +104,9 @@ export class Stick {
       })
     )
   }
-  setPhase(phase: number, time: number) {
+  setPhase(phase: number, time: number, z = 0) {
     this.uniforms.phase.value = phase
     this.uniforms.time.value = time
+    this.uniforms.ballZ.value = z
   }
 }
