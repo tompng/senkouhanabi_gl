@@ -77,53 +77,64 @@ targetRenderScene.add(targetRenderMesh)
 type SparkElement = {
   p: P3
   v: P3
-  life: number
+  terminate: boolean
   at: number
   w: number
 }
 
 const friction = 30
-function nextSpark({ p, v, life, at, w }: SparkElement, time: number, out: SparkElement[]) {
+function nextSpark({ p, v, terminate, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
-  const fr = friction / w
+  const fr = friction / Math.pow(w, 1 / 3)
   const p2 = positionAt(p, v, fr, t)
   const v2 = velocityAt(v, fr, t)
-  sparkCurve(p, v, p2, v2, life, w, t, fr)
-  if (t === life) return
-  if (t === time) {
-    out.push({ p: p2, v: v2, life: life - t, at: at - t, w })
+  sparkCurve(p, v, w, t, fr, terminate)
+  if (t === at && terminate) return
+  if (t !== at) {
+    out.push({ p: p2, v: v2, terminate, at: at - t, w })
     return
   }
-  if (w < 1/16) return
   const rands: P3[] = []
+  const weights: number[] = []
   const numRands = 2 + 18 * Math.random()
-  for (let i = 0; i < numRands; i++) rands.push(sphereRandom())
-  const avRand = { x: 0, y: 0, z: 0 }
-  rands.forEach(({ x, y, z }) => {
-    avRand.x += x / rands.length
-    avRand.y += y / rands.length
-    avRand.z += z / rands.length
+  for (let i = 0; i < numRands; i++) {
+    rands.push(sphereRandom())
+    weights.push(Math.pow(Math.random(), 4))
+  }
+  const wsum = weights.reduce((a, b) => a + b)
+  const avRand = { x: 0, y: 0, z: 0, w: 0 }
+  rands.forEach(({ x, y, z }, i) => {
+    const s = weights[i] / wsum
+    avRand.x += x * s
+    avRand.y += y * s
+    avRand.z += z * s
   })
   rands.forEach(p => {
     p.x -= avRand.x
     p.y -= avRand.y
     p.z -= avRand.z
   })
-  rands.forEach(v3 => {
+  rands.forEach((v3, i) => {
+    const w2 = weights[i] * w / wsum
     const vr = 4
-    const life2 = life - t
-    const at2 = Math.min(life2, 0.02 + 2 * life2 * Math.random())
+    const terminate = w2 < 0.02
+    let at2 = 0.04 * Math.pow(w, 1 / 3) * Math.random()
+    if (terminate) {
+      at2 = at2 * 2
+    } else {
+      at2 + 1
+    }
     nextSpark({
       p: p2,
       v: { x: v2.x + vr * v3.x, y: v2.y + vr * v3.y, z: v2.z + vr * v3.z },
-      life: life2,
+      terminate,
       at: at2,
-      w: w / 2
+      w: w2
     }, time - t, out)
   })
 }
 let globalSparkBrightness = 1 / 4
-function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: number, friction: number) {
+function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, terminate: boolean) {
   const curve = curves.get()
   curve.p.x = p.x
   curve.p.y = p.y
@@ -131,11 +142,13 @@ function sparkCurve(p: P3, v: P3, p2: P3, v2: P3, life: number, w: number, t: nu
   curve.v.x = v.x
   curve.v.y = v.y
   curve.v.z = v.z
-  const c = w * t * 4
   curve.color.setRGB(0.6 * globalSparkBrightness, 0.3 * globalSparkBrightness, 0.15 * globalSparkBrightness)
   curve.brightness0 = 1
   curve.brightness1 = 0
   curve.brightness2 = 0
+  if (terminate) {
+    curve.brightness1 = -1 / t
+  }
   curve.friction = friction
   curve.time = t
 }
@@ -147,7 +160,7 @@ function add(c: { x: number; y: number; z: number }) {
   const v = sphereRandom()
   const vr = 4
   const r = 0.01
-  sparks.push({ p: { x: c.x + r * v.x, y: c.y + r * v.y, z: c.z + r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, life: 0.1, at: 0.02 + 0.04 * Math.random(), w: 1 })
+  sparks.push({ p: { x: c.x + r * v.x, y: c.y + r * v.y, z: c.z + r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, terminate: false, at: 0.02 + 0.1 * Math.random(), w: 1 })
 }
 function update(dt: number) {
   const sparks2: SparkElement[] = []
