@@ -184,19 +184,19 @@ document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
 const focusPosition = { x: 0, y: 0, z: 0 }
 let floorLighting = 0
-let prevRunTime: number = 0
+let prevAddTime: number = 0
+let runningTime = 0
 function animate() {
   const time = performance.now() / 1000
-  const dt = time - twas
+  const dt = Math.min(time - twas, 1 / 15)
   twas = time
   if (running) {
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
     const wrand = (2 + Math.sin(23.84 * time) + Math.sin(17.57 * time)) / 4
     setWind({ x: wind })
-    const wdt = Math.min(dt, 0.5)
-    windEffect.x += windEffect.vx * wdt
-    windEffect.vx += (48 * wind * wrand - 16 * windEffect.x - 2 * windEffect.vx) * wdt
+    windEffect.x += windEffect.vx * dt
+    windEffect.vx += (48 * wind * wrand - 16 * windEffect.x - 2 * windEffect.vx) * dt
     const we = windEffect.x
     const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 8 }
     focusPosition.x = wm.x
@@ -204,8 +204,7 @@ function animate() {
     focusPosition.z = wm.z
     stick.windMove.x = wm.x
     stick.windMove.z = wm.z
-    if (time0 == null) time0 = time
-    const t = time - time0
+    const t = runningTime
     const phase = 1 - Math.exp(-0.6 * t)
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
     const ballStickRatio = 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16)
@@ -213,10 +212,11 @@ function animate() {
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
     const rnd = Math.min(smoothStep((t - 2) / 20), smoothStep((50 - t) / 30) * 0.98 + 0.02)
-    const n = Math.floor((t - prevRunTime) * 1000)
-    prevRunTime += n / 1000
+    const n = Math.floor((t - prevAddTime) * 1000)
+    prevAddTime += n / 1000
     const numTries = Math.min(n, 64)
     for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add({ ...wm, z: wm.z + ballZ }, ballStickRatio)
+    runningTime += dt
     update(dt)
   }
   const thscale = 0.8
