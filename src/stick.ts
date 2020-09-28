@@ -83,6 +83,7 @@ void main() {
 `
 
 export const stickRadius = 0.0025
+
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
@@ -115,5 +116,12 @@ export class Stick {
     this.uniforms.time.value = time
     this.uniforms.ballZ.value = z
     this.uniforms.ballR.value = stickRadius * ballRatio
+  }
+  ballCenter() {
+    const z = this.uniforms.ballZ.value
+    const cx = 0.001 * (Math.sin(18 * z) - Math.sin(23 * z) + Math.sin(35 * z) - Math.sin(51 * z));
+    const cy = 0.001 * (Math.sin(17 * z) - Math.sin(31 * z) + Math.sin(57 * z) - Math.sin(43 * z));
+    const ez = Math.exp(-4.0 * z)
+    return { x: cx + this.windMove.x * ez, y: cy + this.windMove.y * ez, z: this.windMove.z * ez + z }
   }
 }

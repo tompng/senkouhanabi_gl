@@ -199,9 +199,6 @@ function animate() {
     windEffect.vx += (48 * wind * wrand - 16 * windEffect.x - 2 * windEffect.vx) * dt
     const we = windEffect.x
     const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 8 }
-    focusPosition.x = wm.x
-    focusPosition.y = wm.y
-    focusPosition.z = wm.z
     stick.windMove.x = wm.x
     stick.windMove.z = wm.z
     const t = runningTime
@@ -211,11 +208,15 @@ function animate() {
     stick.setPhase(phase, time, ballZ, ballStickRatio)
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
+    const center = stick.ballCenter()
+    focusPosition.x = center.x
+    focusPosition.y = center.y
+    focusPosition.z = center.z
     const rnd = Math.min(smoothStep((t - 2) / 20), smoothStep((50 - t) / 30) * 0.98 + 0.02)
     const n = Math.floor((t - prevAddTime) * 1000)
     prevAddTime += n / 1000
     const numTries = Math.min(n, 64)
-    for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add({ ...wm, z: wm.z + ballZ }, ballStickRatio)
+    for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add(center, ballStickRatio)
     runningTime += dt
     update(dt)
   }
