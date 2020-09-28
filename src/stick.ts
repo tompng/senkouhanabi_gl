@@ -82,6 +82,7 @@ void main() {
 }
 `
 
+export const stickRadius = 0.0025
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
@@ -90,7 +91,7 @@ export class Stick {
     phase: { value: 1 },
     time: { value: 0 },
     ballZ: { value: 0 },
-    stickR: { value: 0.0025 },
+    stickR: { value: stickRadius },
     ballR: { value: 0.006 }
   }
   constructor() {
@@ -113,6 +114,6 @@ export class Stick {
     this.uniforms.phase.value = phase
     this.uniforms.time.value = time
     this.uniforms.ballZ.value = z
-    this.uniforms.ballR.value = this.uniforms.stickR.value * ballRatio
+    this.uniforms.ballR.value = stickRadius * ballRatio
   }
 }

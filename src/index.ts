@@ -2,7 +2,7 @@ import { Mesh } from 'three'
 import * as THREE from 'three'
 import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { createTextures, Environment } from './texture'
-import { Stick } from './stick'
+import { Stick, stickRadius } from './stick'
 const renderer = new THREE.WebGLRenderer()
 const size = 1024
 renderer.setSize(size, size)
@@ -15,6 +15,9 @@ const curves = new CurveManager(scene)
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 const mouse = { x: 0, y: 0, down: false }
+function smoothStep(t: number) {
+  return t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t)
+}
 function touchPosition(e: { pageX: number; pageY: number }) {
   const el = renderer.domElement
   const width = el.offsetWidth
@@ -83,6 +86,7 @@ type SparkElement = {
 }
 
 const friction = 30
+let terminateThreshold = 0.02
 function nextSpark({ p, v, terminate, at, w }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
   const fr = friction / Math.pow(w, 1 / 3)
@@ -117,7 +121,7 @@ function nextSpark({ p, v, terminate, at, w }: SparkElement, time: number, out: 
   rands.forEach((v3, i) => {
     const w2 = weights[i] * w / wsum
     const vr = 4
-    const terminate = w2 < 0.02
+    const terminate = w2 < terminateThreshold
     let at2 = 0.04 * Math.pow(w, 1 / 3) * Math.random()
     if (terminate) {
       at2 = at2 * 2
@@ -156,18 +160,23 @@ function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, termin
 let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
-function add(c: { x: number; y: number; z: number }) {
-  const v = sphereRandom()
+function add(c: { x: number; y: number; z: number }, bsratio: number) {
+  const dir = sphereRandom()
   const vr = 4
-  const r = 0.01
-  sparks.push({ p: { x: c.x + r * v.x, y: c.y + r * v.y, z: c.z + r * v.z }, v: { x: vr * v.x, y: vr * v.y, z: vr * v.z }, terminate: false, at: 0.02 + 0.1 * Math.random(), w: 1 })
+  const r = stickRadius * bsratio
+  const p = { x: c.x + r * dir.x, y: c.y + r * dir.y, z: c.z + r * dir.z }
+  const v = { x: vr * dir.x, y: vr * dir.y, z: vr * dir.z }
+  const t = 0.02 + 0.1 * Math.random()
+  const terminate = 0.3 + 0.5 * Math.random() < terminateThreshold
+  const at = terminate ? 2 * t : t
+  sparks.push({ p, v, terminate, at, w: 1 })
 }
 function update(dt: number) {
   const sparks2: SparkElement[] = []
   sparks.forEach(sp => nextSpark(sp, dt, sparks2))
   sparks = sparks2
 }
-for (let i = 0; i < 20; i++) add({ x: 0, y: 0, z: 0 })
+for (let i = 0; i < 20; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
 update(1000)
 let running = false
 let time0: number | null = null
@@ -198,9 +207,10 @@ function animate() {
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
     const ballStickRatio = 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16)
     stick.setPhase(phase, time, ballZ, ballStickRatio)
+    terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
-    const rnd = Math.max(0, Math.min((time - time0 - 2) * 0.1, 1))
-    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add({ ...wm, z: wm.z + ballZ })
+    const rnd = Math.min(smoothStep((t - 2) / 20), smoothStep((50 - t) / 30) * 0.98 + 0.02)
+    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add({ ...wm, z: wm.z + ballZ }, ballStickRatio)
     update(dt)
   }
   const thscale = 0.8
