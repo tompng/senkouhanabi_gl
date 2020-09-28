@@ -195,8 +195,9 @@ function animate() {
     if (time0 == null) time0 = time
     const t = time - time0
     const phase = 1 - Math.exp(-0.6 * t)
-    const ballZ = Math.min(0.005 * (Math.sqrt(1 + t * t) - 1), 0.1)
-    stick.setPhase(phase, time, ballZ)
+    const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
+    const ballStickRatio = 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16)
+    stick.setPhase(phase, time, ballZ, ballStickRatio)
     curves.reset()
     const rnd = Math.max(0, Math.min((time - time0 - 2) * 0.1, 1))
     for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add({ ...wm, z: wm.z + ballZ })

@@ -4,10 +4,8 @@ const cylinderGeometry = new THREE.CylinderBufferGeometry(1, 1, 2, 12, 128)
 const vertexShader = `
 varying vec3 vNormal, vPosition;
 uniform vec3 windMove;
-uniform float phase, time, ballZ;
+uniform float phase, time, ballZ, stickR, ballR;
 varying float ttt, oscillationColor;
-const float stickR = 0.0025;
-const float ballR = 0.006;
 float softReLU(float x, float s) {
   return x < -s ? 0.0 : x > s ? x : 0.25 * (x + s) * (x + s) / s;
 }
@@ -21,7 +19,7 @@ vec2 ballRZFunc(float t) {
 vec2 stickRZFunc(float t) {
   float rr = clamp(phase, 0.0, 0.2);
   float r = t < 1.0 - rr ? 1.0 : sqrt((1.0 - t) * (t-1.0+2.0*rr))/rr;
-  return vec2(stickR * r, (-t - 2.0) * 2.3 * ballR - 2.0 * ballR);
+  return vec2(stickR * r, ballR * (2.3 * (-t - 2.0) - 2.0));
 }
 vec2 rzFunc(float t) {
   return mix(stickRZFunc(t), ballRZFunc(t), phase * phase);
@@ -38,7 +36,7 @@ void main() {
     r = stickR;
     ttt = 0.0;
   } else {
-    float t = -2.0 - 3.0 * (z - ballZ) / (1.0 + ballZ);
+    float t = min(1.0, -2.0 - 3.0 * (z - ballZ) / (1.0 + ballZ));
     ttt = clamp(1.75 + t, 0.0, 1.0);
     vec2 b = rzFunc(t);
     float delta = 0.01;
@@ -63,7 +61,7 @@ void main() {
     + sin(319.1 * vPosition.yzx + 657.5 * vPosition.zxy + 6.3 * time)
     + sin(431.3 * vPosition.zxy + 343.4 * vPosition.xyz + 9.2 * time)
   );
-  float o = 0.02 * phase * phase * (3.0 - 2.0 * phase) / (1.0 + exp(-4.0 * (1.0 - z / ballR)));
+  float o = 0.015 * phase * phase * (3.0 - 2.0 * phase) / (1.0 + exp(-4.0 * (1.0 - (z - ballZ) / ballR)));
   vPosition += o * ballR * oscillation;
   oscillationColor = o * dot(oscillation, oscillation);
   gl_Position = projectionMatrix * viewMatrix * vec4(vPosition, 1);
@@ -87,7 +85,14 @@ void main() {
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
-  uniforms = { windMove: { value: new THREE.Vector3 }, phase: { value: 1 }, time: { value: 0 }, ballZ: { value: 0 } }
+  uniforms = {
+    windMove: { value: new THREE.Vector3 },
+    phase: { value: 1 },
+    time: { value: 0 },
+    ballZ: { value: 0 },
+    stickR: { value: 0.0025 },
+    ballR: { value: 0.006 }
+  }
   constructor() {
     this.windMove = this.uniforms.windMove.value
     this.mesh = new THREE.Mesh(
@@ -104,9 +109,10 @@ export class Stick {
       })
     )
   }
-  setPhase(phase: number, time: number, z = 0) {
+  setPhase(phase: number, time: number, z = 0, ballRatio = 2.4) {
     this.uniforms.phase.value = phase
     this.uniforms.time.value = time
     this.uniforms.ballZ.value = z
+    this.uniforms.ballR.value = this.uniforms.stickR.value * ballRatio
   }
 }
