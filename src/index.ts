@@ -83,19 +83,21 @@ type SparkElement = {
   terminate: boolean
   at: number
   w: number
+  color: number
+  dcolor: number
 }
 
 const friction = 30
 let terminateThreshold = 0.02
-function nextSpark({ p, v, terminate, at, w }: SparkElement, time: number, out: SparkElement[]) {
+function nextSpark({ p, v, terminate, at, w, color, dcolor }: SparkElement, time: number, out: SparkElement[]) {
   const t = Math.min(time, at)
   const fr = friction / Math.pow(w, 1 / 3)
   const p2 = positionAt(p, v, fr, t)
   const v2 = velocityAt(v, fr, t)
-  sparkCurve(p, v, w, t, fr, terminate)
+  sparkCurve(p, v, w, t, fr, color, dcolor)
   if (t === at && terminate) return
   if (t !== at) {
-    out.push({ p: p2, v: v2, terminate, at: at - t, w })
+    out.push({ p: p2, v: v2, terminate, at: at - t, w, color: color + dcolor * t, dcolor })
     return
   }
   const rands: P3[] = []
@@ -132,13 +134,15 @@ function nextSpark({ p, v, terminate, at, w }: SparkElement, time: number, out: 
       p: p2,
       v: { x: v2.x + vr * v3.x, y: v2.y + vr * v3.y, z: v2.z + vr * v3.z },
       terminate,
+      color: 1,
+      dcolor: terminate ? -1 / at2 : 0,
       at: at2,
       w: w2
     }, time - t, out)
   })
 }
 let globalSparkBrightness = 1 / 4
-function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, terminate: boolean) {
+function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, color: number, dcolor: number) {
   const curve = curves.get()
   curve.p.x = p.x
   curve.p.y = p.y
@@ -147,12 +151,9 @@ function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, termin
   curve.v.y = v.y
   curve.v.z = v.z
   curve.color.setRGB(0.6 * globalSparkBrightness, 0.3 * globalSparkBrightness, 0.15 * globalSparkBrightness)
-  curve.brightness0 = 1
-  curve.brightness1 = 0
+  curve.brightness0 = color
+  curve.brightness1 = dcolor
   curve.brightness2 = 0
-  if (terminate) {
-    curve.brightness1 = -1 / t
-  }
   curve.friction = friction
   curve.time = t
 }
@@ -169,17 +170,16 @@ function add(c: { x: number; y: number; z: number }, bsratio: number) {
   const t = 0.02 + 0.1 * Math.random()
   const terminate = 0.3 + 0.5 * Math.random() < terminateThreshold
   const at = terminate ? 2 * t : t
-  sparks.push({ p, v, terminate, at, w: 1 })
+  sparks.push({ p, v, terminate, at, w: 1, color: 1, dcolor: terminate ? -1 / at : 0 })
 }
 function update(dt: number) {
   const sparks2: SparkElement[] = []
   sparks.forEach(sp => nextSpark(sp, dt, sparks2))
   sparks = sparks2
 }
-for (let i = 0; i < 20; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
+for (let i = 0; i < 5; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
 update(1000)
 let running = false
-let time0: number | null = null
 document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
 const focusPosition = { x: 0, y: 0, z: 0 }
