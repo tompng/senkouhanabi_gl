@@ -192,11 +192,13 @@ function animate() {
   if (running) {
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
+    const wrand = (2 + Math.sin(23.84 * time) + Math.sin(17.57 * time)) / 4
     setWind({ x: wind })
-    windEffect.x += windEffect.vx * 0.1
-    windEffect.vx += (wind * Math.random() - 0.5 * windEffect.x - 0.5 * windEffect.vx) * 0.2
+    const wdt = Math.min(dt, 0.5)
+    windEffect.x += windEffect.vx * wdt
+    windEffect.vx += (48 * wind * wrand - 16 * windEffect.x - 2 * windEffect.vx) * wdt
     const we = windEffect.x
-    const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 2 - 0.04 * we / 2 }
+    const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 8 }
     focusPosition.x = wm.x
     focusPosition.y = wm.y
     focusPosition.z = wm.z
