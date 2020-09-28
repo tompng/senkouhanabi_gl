@@ -184,6 +184,7 @@ document.body.onclick = () => { running = true }
 const windEffect = { x: 0, vx: 0 }
 const focusPosition = { x: 0, y: 0, z: 0 }
 let floorLighting = 0
+let prevRunTime: number = 0
 function animate() {
   const time = performance.now() / 1000
   const dt = time - twas
@@ -210,7 +211,10 @@ function animate() {
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
     const rnd = Math.min(smoothStep((t - 2) / 20), smoothStep((50 - t) / 30) * 0.98 + 0.02)
-    for(let i = 0; i < 10; i++) if (Math.random() < 0.2 * rnd) add({ ...wm, z: wm.z + ballZ }, ballStickRatio)
+    const n = Math.floor((t - prevRunTime) * 1000)
+    prevRunTime += n / 1000
+    const numTries = Math.min(n, 64)
+    for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add({ ...wm, z: wm.z + ballZ }, ballStickRatio)
     update(dt)
   }
   const thscale = 0.8
