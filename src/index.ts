@@ -181,7 +181,7 @@ for (let i = 0; i < 5; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
 update(1000)
 let running = false
 document.body.onclick = () => { running = true }
-const windEffect = { x: 0, vx: 0 }
+const windEffect = { x: 0, y: 0, vx: 0, vy: 0 }
 const focusPosition = { x: 0, y: 0, z: 0 }
 let floorLighting = 0
 let prevAddTime: number = 0
@@ -193,13 +193,17 @@ function animate() {
   if (running) {
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
+    const wy = 0.1 * (Math.sin(1.43 * time) + Math.sin(1.97 * time) + Math.sin(1.19 * time))
+    const wz = 0.1 * (Math.sin(1.71 * time) + Math.sin(1.37 * time) + Math.sin(1.13 * time))
     const wrand = (2 + Math.sin(23.84 * time) + Math.sin(17.57 * time)) / 4
-    setWind({ x: wind })
+    setWind({ x: wind, y: wy * wind, z: wz * wind })
     windEffect.x += windEffect.vx * dt
+    windEffect.y += windEffect.vy * dt
     windEffect.vx += (48 * wind * wrand - 16 * windEffect.x - 2 * windEffect.vx) * dt
-    const we = windEffect.x
-    const wm = { x: 0.04 * we, y: 0, z: 0.04 * we * we / 8 }
+    windEffect.vy += (48 * wind * wrand - 16 * windEffect.y - 2 * windEffect.vy) * dt
+    const wm = { x: 0.04 * windEffect.x, y: 0.04 * windEffect.y, z: 0.04 * (windEffect.x ** 2 + windEffect.y ** 2) / 8 }
     stick.windMove.x = wm.x
+    stick.windMove.y = wm.y
     stick.windMove.z = wm.z
     const t = runningTime
     const phase = 1 - Math.exp(-0.6 * t)
