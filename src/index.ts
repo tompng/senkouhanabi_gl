@@ -65,7 +65,6 @@ const envObject = new Environment(...createTextures(renderer))
 backgroundScene.add(envObject.mesh)
 const stick = new Stick()
 ballStickScene.add(stick.mesh)
-// fires.forEach(f => ballStickScene.add(f.mesh))
 stick.mesh.renderOrder = 1
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
@@ -163,7 +162,7 @@ let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
 const fireItems = [...new Array(8)].map((_, i) => {
-  const z = 0.3 + 0.8 * Math.random()
+  const z = Math.random()
   const endTime = 2 + 5 * (1 - z) * (0.5 + 0.5 * Math.random())
   const startTime = Math.max(1, endTime - 0.75 - 0.5 * Math.random())
   const fire = new Fire()
@@ -219,12 +218,23 @@ function update(dt: number) {
 for (let i = 0; i < 5; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
 update(1000)
 let running = false
-document.body.onclick = () => { running = true }
+let started = false
+document.body.onclick = () => {
+  if (!running) {
+    running = true
+  } else if (!started) {
+    started = true
+  } else if (runningTime > 110) {
+    started = false
+    runningTime = startTime = 0
+  }
+}
 const windEffect = { x: 0, y: 0, vx: 0, vy: 0 }
 const focusPosition = { x: 0, y: 0, z: 0 }
 let floorLighting = 0
 let prevAddTime: number = 0
 let runningTime = 0
+let startTime = 0
 function animate() {
   const time = performance.now() / 1000
   const dt = Math.min(time - twas, 1 / 15)
@@ -245,7 +255,8 @@ function animate() {
     stick.windMove.x = wm.x
     stick.windMove.y = wm.y
     stick.windMove.z = wm.z
-    const t = runningTime
+    if (startTime === 0 && started) startTime = runningTime
+    const t = started ? runningTime - startTime : 0
     const phase = t < 1 ? 0 : 1 - Math.exp(-0.4 * (t - 1))
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
     const ballStickRatio = Math.min(1.0 + 0.05 * t ** 2, 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16))

@@ -15,7 +15,7 @@ vec3 pos(float len, vec3 axis0, vec3 axis1, vec3 axis2, vec2 xy, float t) {
   float th2 = (2.0 + 2.0 * seed.y) * t - (7.0 + 8.0 * seed.w) * time + 3.14 * seed.z;
   float th3 = (2.0 + 2.0 * seed.z) * t - (8.0 + 7.0 * seed.x) * time + 3.14 * seed.w;
   float th4 = (2.0 + 2.0 * seed.w) * t - (9.0 + 6.0 * seed.y) * time + 3.14 * seed.x;
-  vec3 noize = (t + 1.0) * 0.04 * (
+  vec3 noize = (t + 1.0) * 0.02 * (
     + axis1 * cos(th1) + axis2 * sin(th1)
     + axis1 * cos(th2) + axis2 * sin(th2)
     + axis1 * cos(th3) + axis2 * sin(th3)
