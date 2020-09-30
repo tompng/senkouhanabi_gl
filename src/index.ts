@@ -224,8 +224,8 @@ document.body.onclick = () => {
     running = true
   } else if (!started) {
     started = true
-  } else if (runningTime > 110) {
-    started = false
+  } else if (runningTime > 114) {
+    started = true
     runningTime = startTime = 0
   }
 }
@@ -241,6 +241,10 @@ function animate() {
   twas = time
   let fireLighting = 0
   if (running) {
+    if (runningTime > 114 + 30) {
+      started = true
+      runningTime = startTime = 0
+    }
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
     const wy = 0.1 * (Math.sin(1.43 * time) + Math.sin(1.97 * time) + Math.sin(1.19 * time))
@@ -260,7 +264,13 @@ function animate() {
     const phase = t < 1 ? 0 : 1 - Math.exp(-0.4 * (t - 1))
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
     const ballStickRatio = Math.min(1.0 + 0.05 * t ** 2, 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16))
-    stick.setPhase(phase, time, ballZ, ballStickRatio)
+    if (t < 113) {
+      stick.setPhase(phase, time, ballZ, ballStickRatio)
+      stick.basePosition.z = 2 * smoothStep((t - 112))
+    } else {
+      stick.setPhase(0, 0, 0, 1.45)
+      stick.basePosition.z = 2 * smoothStep((114 - t))
+    }
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
     fireItems.forEach(item => {

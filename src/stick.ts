@@ -3,10 +3,10 @@ import * as THREE from 'three'
 const cylinderGeometry = new THREE.CylinderBufferGeometry(1, 1, 2, 12, 128)
 const vertexShader = `
 varying vec3 vNormal, vPosition;
-uniform vec3 windMove;
+uniform vec3 windMove, basePosition;
 uniform float phase, time, ballZ, stickR, ballR;
 varying float ttt, oscillationColor;
-varying vec3 baseCoord;
+varying vec3 coord;
 float softReLU(float x, float s) {
   return x < -s ? 0.0 : x > s ? x : 0.25 * (x + s) * (x + s) / s;
 }
@@ -63,23 +63,23 @@ void main() {
     + sin(431.3 * vPosition.zxy + 343.4 * vPosition.xyz + 9.2 * time)
   );
   float o = 0.015 * phase * phase * (3.0 - 2.0 * phase) / (1.0 + exp(-4.0 * (1.0 - (z - ballZ) / ballR)));
-  vPosition += o * ballR * oscillation;
+  vPosition += basePosition + o * ballR * oscillation;
   oscillationColor = o * dot(oscillation, oscillation);
   gl_Position = projectionMatrix * viewMatrix * vec4(vPosition, 1);
-  baseCoord = vec3(xy, z);
+  coord = vec3(xy, z);
 }
 `
 
 const fragmentShader = `
 varying vec3 vNormal, vPosition;
 varying float ttt, oscillationColor;
-varying vec3 baseCoord;
-uniform float phase, time, ballZ, brightness, lighting;
+varying vec3 coord;
+uniform float phase, ballZ, brightness, lighting;
 void main() {
   vec3 view = normalize(vPosition - cameraPosition);
   vec3 norm = normalize(vNormal);
   float c = max(0.0, -dot(view, norm));
-  float baseColor = 0.1 + 0.01 * sin(2.0 * atan(baseCoord.x/baseCoord.y) - 512.0 * sqrt(0.2 + baseCoord.z));
+  float baseColor = 0.1 + 0.01 * sin(2.0 * atan(coord.x / coord.y) - 512.0 * sqrt(0.2 + coord.z));
   gl_FragColor.rgb = vec3(mix(baseColor, 0.1, ttt)) * (1.0 + lighting * vec3(4,2,1) / (1.0 + 256.0 * (vPosition.z - ballZ) * (vPosition.z - ballZ)));
   gl_FragColor.a = mix(c * c, sqrt(c), ttt);
   gl_FragColor.rgb = gl_FragColor.rgb + brightness * phase * vec3(4.0,0.8,0.4) * ttt * (1.0 - 0.5 * oscillationColor);
@@ -91,8 +91,10 @@ export const stickRadius = 0.0025
 export class Stick {
   mesh: THREE.Mesh
   windMove: THREE.Vector3
+  basePosition: THREE.Vector3
   uniforms = {
-    windMove: { value: new THREE.Vector3 },
+    windMove: { value: new THREE.Vector3() },
+    basePosition: { value: new THREE.Vector3() },
     phase: { value: 1 },
     time: { value: 0 },
     ballZ: { value: 0 },
@@ -103,6 +105,7 @@ export class Stick {
   }
   constructor() {
     this.windMove = this.uniforms.windMove.value
+    this.basePosition = this.uniforms.basePosition.value
     this.mesh = new THREE.Mesh(
       cylinderGeometry,
       new THREE.ShaderMaterial({
