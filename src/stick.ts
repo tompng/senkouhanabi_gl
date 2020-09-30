@@ -11,19 +11,19 @@ float softReLU(float x, float s) {
   return x < -s ? 0.0 : x > s ? x : 0.25 * (x + s) * (x + s) / s;
 }
 vec2 ballRZFunc(float t) {
-  float b = sqrt(1.0 - stickR * stickR / ballR / ballR);
+  float b = sqrt(max(0.0, 1.0 - stickR * stickR / ballR / ballR));
   float a = softReLU(t + b, 0.4) - b;
   float r = ballR * sqrt(1.0 - a * a);
   float z = -t * ballR;
   return vec2(r, z);
 }
 vec2 stickRZFunc(float t) {
-  float rr = clamp(phase, 0.0, 0.2);
-  float r = t < 1.0 - rr ? 1.0 : sqrt((1.0 - t) * (t-1.0+2.0*rr))/rr;
+  float rr = clamp(phase, 0.0, 0.5);
+  float r = clamp(0.5 - rr - 0.5 * t, 0.4, 1.0);
   return vec2(stickR * r, ballR * (4.0 * (-t - 2.0) - 2.0));
 }
 vec2 rzFunc(float t) {
-  return mix(stickRZFunc(t), ballRZFunc(t), phase * phase);
+  return mix(stickRZFunc(t), ballRZFunc(t), phase);
 }
 void main() {
   vec2 xy = position.zx;
@@ -46,7 +46,7 @@ void main() {
     vNormal = normalize(vec3(vNormal.xy, -dr));
     r = b.x;
     z = ballZ + b.y;
-    float w = stickR * 6.0 * pow(phase * (1.0 - phase), 2.0) * pow(max(t+1.0, 0.0), 2.0);
+    float w = stickR * 6.0 * pow(phase * (1.0 - phase), 2.0) * pow(max(t + 1.0, 0.0), 2.0);
     vec2 w1 = vec2(1.7, 1.9), w2 = vec2(-2.5, -3.1);
     vec2 t1 = w1 * t - 5.3 * phase, t2 = w2 * t - 3.7 * phase;
     wave = w * (sin(t1) + sin(t2));
