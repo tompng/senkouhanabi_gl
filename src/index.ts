@@ -224,7 +224,7 @@ document.body.onclick = () => {
     running = true
   } else if (!started) {
     started = true
-  } else if (runningTime > 114) {
+  } else if (runningTime - startTime > 114) {
     started = true
     runningTime = startTime = 0
   }
@@ -246,7 +246,7 @@ function animate() {
   twas = time
   let fireLighting = 0
   if (running) {
-    if (runningTime > 114 + 30) {
+    if (runningTime - startTime > 114 + 30) {
       started = true
       runningTime = startTime = 0
     }
