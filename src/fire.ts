@@ -9,7 +9,7 @@ varying float vT;
 const float pi = 3.1415926535;
 vec3 pos(float len, vec3 axis0, vec3 axis1, vec3 axis2, vec2 xy, float t) {
   float th = clamp(t, -1.0, 1.0) * pi * 0.5;
-  vec3 p = sin(th) * axis0 + 0.33 * cos(th) * (axis1 * xy.x + axis2 * xy.y);
+  vec3 p = sin(th) * axis0 + 0.4 * cos(th) * (axis1 * xy.x + axis2 * xy.y);
   float size = 1.0 + 0.2 * (sin((6.3 + seed.x) * time + seed.y) + sin((4.3 + seed.z) * time + seed.w));
   float th1 = (2.0 + 2.0 * seed.x) * t - (6.0 + 9.0 * seed.z) * time + 3.14 * seed.y;
   float th2 = (2.0 + 2.0 * seed.y) * t - (7.0 + 8.0 * seed.w) * time + 3.14 * seed.z;
@@ -44,12 +44,12 @@ void main() {
 `
 
 const fragmentShader = `
-uniform vec3 color;
+uniform float brightness;
 varying vec3 vPosition, vNormal;
 varying float vT;
 void main() {
   float c = dot(normalize(vPosition - cameraPosition), normalize(vNormal));
-  gl_FragColor.rgb = 1.0 * c * c * c * c * color * (1.0 - vT);
+  gl_FragColor.rgb = 1.0 * c * c * c * c * brightness * (1.0 - vT) * vec3(4, 2, 1);
   gl_FragColor.a = 1.0;
 }
 `
@@ -61,18 +61,16 @@ export class Fire {
     seed: { value: new THREE.Vector4(Math.random(), Math.random(), Math.random(), Math.random()) },
     center: { value: new THREE.Vector3() },
     direction: { value: new THREE.Vector3() },
-    color: { value: new THREE.Color('#864') },
+    brightness: { value: 1 },
     time: { value: 0 }
   }
   readonly center: THREE.Vector3
   readonly direction: THREE.Vector3
-  readonly color: THREE.Color
   readonly mesh: THREE.Mesh
   readonly material: THREE.ShaderMaterial
   constructor() {
     this.center = this.uniforms.center.value
     this.direction = this.uniforms.direction.value
-    this.color = this.uniforms.color.value
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader,
@@ -84,6 +82,12 @@ export class Fire {
   }
   dispose() {
     this.material.dispose()
+  }
+  get brightness() {
+    return this.uniforms.brightness.value
+  }
+  set brightness(brightness: number) {
+    this.uniforms.brightness.value = brightness
   }
   get time() {
     return this.uniforms.time.value

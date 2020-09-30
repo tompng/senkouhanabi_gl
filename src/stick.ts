@@ -19,7 +19,7 @@ vec2 ballRZFunc(float t) {
 vec2 stickRZFunc(float t) {
   float rr = clamp(phase, 0.0, 0.2);
   float r = t < 1.0 - rr ? 1.0 : sqrt((1.0 - t) * (t-1.0+2.0*rr))/rr;
-  return vec2(stickR * r, ballR * (2.3 * (-t - 2.0) - 2.0));
+  return vec2(stickR * r, ballR * (4.0 * (-t - 2.0) - 2.0));
 }
 vec2 rzFunc(float t) {
   return mix(stickRZFunc(t), ballRZFunc(t), phase * phase);
@@ -117,11 +117,11 @@ export class Stick {
     this.uniforms.ballZ.value = z
     this.uniforms.ballR.value = stickRadius * ballRatio
   }
-  ballCenter() {
+  ballCenter(dz = 0) {
     const z = this.uniforms.ballZ.value
     const cx = 0.001 * (Math.sin(18 * z) - Math.sin(23 * z) + Math.sin(35 * z) - Math.sin(51 * z));
     const cy = 0.001 * (Math.sin(17 * z) - Math.sin(31 * z) + Math.sin(57 * z) - Math.sin(43 * z));
-    const ez = Math.exp(-4.0 * z)
-    return { x: cx + this.windMove.x * ez, y: cy + this.windMove.y * ez, z: this.windMove.z * ez + z }
+    const ez = Math.exp(-4.0 * (z + dz))
+    return { x: cx + this.windMove.x * ez, y: cy + this.windMove.y * ez, z: this.windMove.z * ez + z + dz }
   }
 }

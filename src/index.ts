@@ -12,10 +12,6 @@ const backgroundScene = new THREE.Scene()
 const ballStickScene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
 const curves = new CurveManager(scene)
-
-
-const fires = [...new Array(4)].map(() => new Fire())
-fires.forEach(f => { f.direction.x = 0.04; f.direction.y = 0.005 * Math.random(); f.direction.z = 0.005 * Math.random() })
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 const mouse = { x: 0, y: 0, down: false }
@@ -69,7 +65,7 @@ const envObject = new Environment(...createTextures(renderer))
 backgroundScene.add(envObject.mesh)
 const stick = new Stick()
 ballStickScene.add(stick.mesh)
-fires.forEach(f => ballStickScene.add(f.mesh))
+// fires.forEach(f => ballStickScene.add(f.mesh))
 stick.mesh.renderOrder = 1
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
@@ -166,6 +162,42 @@ function sparkCurve(p: P3, v: P3, w: number, t: number, friction: number, color:
 let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
+const fireItems = [...new Array(8)].map((_, i) => {
+  const z = 0.3 + 0.7* Math.random()
+  const endTime = 2 + 5 * (1 - z) * (0.5 + 0.5 * Math.random())
+  const startTime = Math.max(1, endTime - 0.4 - 0.2 * Math.random())
+  const fire = new Fire()
+  const size = 0.02 + 0.01 * Math.random()
+  const th = 2 * Math.PI * Math.random()
+  const tz = Math.PI * (Math.random() - 0.5) / 2
+  fire.direction.x = size * Math.cos(th) * Math.cos(tz)
+  fire.direction.y = size * Math.sin(th) * Math.cos(tz)
+  fire.direction.z = size * Math.sin(tz)
+  return {
+    startTime,
+    endTime,
+    z,
+    brightness: 0.25,
+    fire
+  }
+})
+for (let i = 0; i < 8; i++) {
+  const fire = new Fire()
+  const size = 0.04 + 0.02 * Math.random()
+  const th = 2 * Math.PI * Math.random()
+  const r = 0.2 * Math.random()
+  fire.direction.x = size * r * Math.cos(th)
+  fire.direction.y = size * r * Math.sin(th)
+  fire.direction.z = size
+  fireItems.push({
+    startTime: 0.5 * Math.random(),
+    endTime: 1 + Math.random() + 2 * i / 8 ,
+    z: 1.2 - 0.1 * i / 8,
+    brightness: 0.2 + 0.2 * Math.random(),
+    fire
+  })
+}
+
 function add(c: { x: number; y: number; z: number }, bsratio: number) {
   const dir = sphereRandom()
   const vr = 4
@@ -211,23 +243,33 @@ function animate() {
     stick.windMove.y = wm.y
     stick.windMove.z = wm.z
     const t = runningTime
-    const phase = 1 - Math.exp(-0.6 * t)
+    const phase = t < 1 ? 0 : 1 - Math.exp(-0.4 * (t - 1))
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
-    const ballStickRatio = 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16)
+    const ballStickRatio = Math.min(1.0 + 0.05 * t ** 2, 1.2 + (3 * t / 16 + 1 / 4) * Math.exp(-t / 16))
     stick.setPhase(phase, time, ballZ, ballStickRatio)
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
-    const center = stick.ballCenter()
-    fires.forEach(f => {
-      f.time = time
-      f.center.x = center.x
-      f.center.y = center.y
-      f.center.z = center.z
+    fireItems.forEach(item => {
+      if (t > item.endTime) {
+        ballStickScene.remove(item.fire.mesh)
+        return
+      }
+      if (t < item.startTime) return
+      ballStickScene.add(item.fire.mesh)
+      const c = stick.ballCenter(-0.03 * item.z)
+      item.fire.time = time
+      const s = (t - item.startTime) / (item.endTime - item.startTime)
+      item.fire.brightness = 16 * item.brightness * s * s * (1 - s) * (1 - s)
+      item.fire.center.x = c.x
+      item.fire.center.y = c.y
+      item.fire.center.z = c.z
     })
+
+    const center = stick.ballCenter()
     focusPosition.x = center.x
     focusPosition.y = center.y
     focusPosition.z = center.z
-    const rnd = Math.min(smoothStep((t - 2) / 20), smoothStep((50 - t) / 30) * 0.98 + 0.02)
+    const rnd = Math.min(smoothStep((t - 4) / 30), smoothStep((50 - t) / 40) * 0.98 + 0.02)
     const n = Math.floor((t - prevAddTime) * 1000)
     prevAddTime += n / 1000
     const numTries = Math.min(n, 64)
