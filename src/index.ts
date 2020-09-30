@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from './tube'
 import { createTextures, Environment } from './texture'
 import { Stick, stickRadius } from './stick'
+import { Fire } from './fire'
 const renderer = new THREE.WebGLRenderer()
 const size = 1024
 renderer.setSize(size, size)
@@ -12,6 +13,9 @@ const ballStickScene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
 const curves = new CurveManager(scene)
 
+
+const fires = [...new Array(4)].map(() => new Fire())
+fires.forEach(f => { f.direction.x = 0.04; f.direction.y = 0.005 * Math.random(); f.direction.z = 0.005 * Math.random() })
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
 const mouse = { x: 0, y: 0, down: false }
@@ -65,6 +69,7 @@ const envObject = new Environment(...createTextures(renderer))
 backgroundScene.add(envObject.mesh)
 const stick = new Stick()
 ballStickScene.add(stick.mesh)
+fires.forEach(f => ballStickScene.add(f.mesh))
 stick.mesh.renderOrder = 1
 const target = new THREE.WebGLRenderTarget(size, size, {
   minFilter: THREE.NearestFilter,
@@ -213,6 +218,12 @@ function animate() {
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
     curves.reset()
     const center = stick.ballCenter()
+    fires.forEach(f => {
+      f.time = time
+      f.center.x = center.x
+      f.center.y = center.y
+      f.center.z = center.z
+    })
     focusPosition.x = center.x
     focusPosition.y = center.y
     focusPosition.z = center.z
