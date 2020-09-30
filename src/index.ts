@@ -235,7 +235,12 @@ let floorLighting = 0
 let prevAddTime: number = 0
 let runningTime = 0
 let startTime = 0
+const prevRenderedMousePos = { x: NaN, y: NaN }
 function animate() {
+  if (!running && prevRenderedMousePos.x === mouse.x && prevRenderedMousePos.y === mouse.y) {
+    requestAnimationFrame(animate)
+    return
+  }
   const time = performance.now() / 1000
   const dt = Math.min(time - twas, 1 / 15)
   twas = time
@@ -316,11 +321,11 @@ function animate() {
   renderer.autoClear = false
   renderer.clearColor()
   renderer.clearDepth()
-  renderer.render(backgroundScene, camera)
-  curves.update(camera.position, focusPosition)
   const fl = stick.uniforms.brightness.value * 0.01 + globalSparkBrightness * 0.001 * Math.sqrt(curves.activeCount) + 0.2 * fireLighting
   floorLighting = floorLighting * 0.8 + 0.2 * fl
   envObject.set(0.4, floorLighting)
+  renderer.render(backgroundScene, camera)
+  curves.update(camera.position, focusPosition)
   curves.setBackVisible()
   renderer.render(scene, camera)
   renderer.render(ballStickScene, camera)
@@ -329,6 +334,8 @@ function animate() {
   renderer.setRenderTarget(null)
   renderer.render(targetRenderScene, targetRenderCamera)
   renderer.autoClear = true
+  prevRenderedMousePos.x = mouse.x
+  prevRenderedMousePos.y = mouse.y
   requestAnimationFrame(animate)
 }
 animate()
