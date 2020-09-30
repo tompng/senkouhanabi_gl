@@ -71,14 +71,14 @@ void main() {
 const fragmentShader = `
 varying vec3 vNormal, vPosition;
 varying float ttt, oscillationColor;
-uniform float phase, time;
+uniform float phase, time, ballZ, brightness, lighting;
 void main() {
   vec3 view = normalize(vPosition - cameraPosition);
   vec3 norm = normalize(vNormal);
   float c = max(0.0, -dot(view, norm));
-  gl_FragColor.rgb = vec3(0.05) + vec3(0.4,0.2,0.1) / (1.0 + 512.0 * vPosition.z * vPosition.z);
+  gl_FragColor.rgb = vec3(0.1) + lighting * vec3(0.4,0.2,0.1) / (1.0 + 256.0 * (vPosition.z - ballZ) * (vPosition.z - ballZ));
   gl_FragColor.a = mix(c * c, sqrt(c), ttt);
-  gl_FragColor.rgb = gl_FragColor.rgb + phase * vec3(2.0,0.5,0.25) * ttt * (1.0 - 0.5 * oscillationColor);
+  gl_FragColor.rgb = gl_FragColor.rgb + brightness * phase * vec3(4.0,0.8,0.4) * ttt * (1.0 - 0.5 * oscillationColor);
 }
 `
 
@@ -92,6 +92,8 @@ export class Stick {
     phase: { value: 1 },
     time: { value: 0 },
     ballZ: { value: 0 },
+    lighting: { value: 1 },
+    brightness: { value: 1 },
     stickR: { value: stickRadius },
     ballR: { value: 0.006 }
   }

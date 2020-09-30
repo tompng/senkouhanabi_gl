@@ -177,6 +177,7 @@ const fireItems = [...new Array(8)].map((_, i) => {
     startTime,
     endTime,
     z,
+    size,
     brightness: 0.25,
     fire
   }
@@ -193,6 +194,7 @@ for (let i = 0; i < 8; i++) {
     startTime: 0.5 * Math.random(),
     endTime: 1 + Math.random() + 2 * i / 8 ,
     z: 1.2 - 0.1 * i / 8,
+    size,
     brightness: 0.2 + 0.2 * Math.random(),
     fire
   })
@@ -227,6 +229,7 @@ function animate() {
   const time = performance.now() / 1000
   const dt = Math.min(time - twas, 1 / 15)
   twas = time
+  let fireLighting = 0
   if (running) {
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
@@ -260,11 +263,11 @@ function animate() {
       item.fire.time = time
       const s = (t - item.startTime) / (item.endTime - item.startTime)
       item.fire.brightness = 16 * item.brightness * s * s * (1 - s) * (1 - s)
+      fireLighting += item.fire.brightness * item.size
       item.fire.center.x = c.x
       item.fire.center.y = c.y
       item.fire.center.z = c.z
     })
-
     const center = stick.ballCenter()
     focusPosition.x = center.x
     focusPosition.y = center.y
@@ -273,7 +276,11 @@ function animate() {
     const n = Math.floor((t - prevAddTime) * 1000)
     prevAddTime += n / 1000
     const numTries = Math.min(n, 64)
-    for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add(center, ballStickRatio)
+    if (t < 100) {
+      for (let i = 0; i < numTries; i++) if (Math.random() < 0.16 * rnd) add(center, ballStickRatio)
+    }
+    stick.uniforms.brightness.value = Math.min(1, t / 4, Math.max(0, 1 + (90 - t) * 0.05))
+    stick.uniforms.lighting.value = 4 * fireLighting + 0.5 * stick.uniforms.brightness.value + floorLighting * 20.0
     runningTime += dt
     update(dt)
   }
@@ -290,8 +297,8 @@ function animate() {
   renderer.clearDepth()
   renderer.render(backgroundScene, camera)
   curves.update(camera.position, focusPosition)
-  const fl = 0.01 + globalSparkBrightness * 0.002 * Math.sqrt(curves.activeCount)
-  floorLighting = floorLighting * 0.9 + 0.1 * fl
+  const fl = stick.uniforms.brightness.value * 0.01 + globalSparkBrightness * 0.001 * Math.sqrt(curves.activeCount) + 0.2 * fireLighting
+  floorLighting = floorLighting * 0.8 + 0.2 * fl
   envObject.set(0.4, floorLighting)
   curves.setBackVisible()
   renderer.render(scene, camera)
