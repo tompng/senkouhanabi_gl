@@ -177,7 +177,7 @@ const fireItems = [...new Array(8)].map((_, i) => {
     endTime,
     z,
     size,
-    brightness: 0.25,
+    brightness: 0.1,
     fire
   }
 })
