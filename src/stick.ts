@@ -6,6 +6,7 @@ varying vec3 vNormal, vPosition;
 uniform vec3 windMove;
 uniform float phase, time, ballZ, stickR, ballR;
 varying float ttt, oscillationColor;
+varying vec3 baseCoord;
 float softReLU(float x, float s) {
   return x < -s ? 0.0 : x > s ? x : 0.25 * (x + s) * (x + s) / s;
 }
@@ -65,18 +66,21 @@ void main() {
   vPosition += o * ballR * oscillation;
   oscillationColor = o * dot(oscillation, oscillation);
   gl_Position = projectionMatrix * viewMatrix * vec4(vPosition, 1);
+  baseCoord = vec3(xy, z);
 }
 `
 
 const fragmentShader = `
 varying vec3 vNormal, vPosition;
 varying float ttt, oscillationColor;
+varying vec3 baseCoord;
 uniform float phase, time, ballZ, brightness, lighting;
 void main() {
   vec3 view = normalize(vPosition - cameraPosition);
   vec3 norm = normalize(vNormal);
   float c = max(0.0, -dot(view, norm));
-  gl_FragColor.rgb = vec3(0.1) + lighting * vec3(0.4,0.2,0.1) / (1.0 + 256.0 * (vPosition.z - ballZ) * (vPosition.z - ballZ));
+  float baseColor = 0.1 + 0.01 * sin(2.0 * atan(baseCoord.x/baseCoord.y) - 512.0 * sqrt(0.2 + baseCoord.z));
+  gl_FragColor.rgb = vec3(mix(baseColor, 0.1, ttt)) * (1.0 + lighting * vec3(4,2,1) / (1.0 + 256.0 * (vPosition.z - ballZ) * (vPosition.z - ballZ)));
   gl_FragColor.a = mix(c * c, sqrt(c), ttt);
   gl_FragColor.rgb = gl_FragColor.rgb + brightness * phase * vec3(4.0,0.8,0.4) * ttt * (1.0 - 0.5 * oscillationColor);
 }
