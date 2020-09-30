@@ -163,9 +163,9 @@ let sparks: SparkElement[] = []
 let twas = performance.now() / 1000
 
 const fireItems = [...new Array(8)].map((_, i) => {
-  const z = 0.3 + 0.7* Math.random()
+  const z = 0.3 + 0.8 * Math.random()
   const endTime = 2 + 5 * (1 - z) * (0.5 + 0.5 * Math.random())
-  const startTime = Math.max(1, endTime - 0.4 - 0.2 * Math.random())
+  const startTime = Math.max(1, endTime - 0.75 - 0.5 * Math.random())
   const fire = new Fire()
   const size = 0.02 + 0.01 * Math.random()
   const th = 2 * Math.PI * Math.random()
