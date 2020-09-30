@@ -164,7 +164,7 @@ let twas = performance.now() / 1000
 const fireItems = [...new Array(8)].map((_, i) => {
   const z = Math.random()
   const endTime = 2 + 5 * (1 - z) * (0.5 + 0.5 * Math.random())
-  const startTime = Math.max(1, endTime - 0.75 - 0.5 * Math.random())
+  const startTime = Math.max(1, endTime - 1 - 0.5 * Math.random())
   const fire = new Fire()
   const size = 0.02 + 0.01 * Math.random()
   const th = 2 * Math.PI * Math.random()
@@ -224,9 +224,9 @@ document.body.onclick = () => {
     running = true
   } else if (!started) {
     started = true
+    startTime = runningTime
   } else if (runningTime - startTime > 114) {
-    started = true
-    runningTime = startTime = 0
+    startTime = runningTime
   }
 }
 const windEffect = { x: 0, y: 0, vx: 0, vy: 0 }
@@ -248,7 +248,7 @@ function animate() {
   if (running) {
     if (runningTime - startTime > 114 + 30) {
       started = true
-      runningTime = startTime = 0
+      startTime = runningTime
     }
     globalSparkBrightness = 1
     const wind = 0.1 * (Math.sin(0.51 * time) + Math.sin(0.73 * time) + Math.sin(0.37 * time) + Math.sin(0.79 * time)) ** 2
@@ -264,7 +264,6 @@ function animate() {
     stick.windMove.x = wm.x
     stick.windMove.y = wm.y
     stick.windMove.z = wm.z
-    if (startTime === 0 && started) startTime = runningTime
     const t = started ? runningTime - startTime : 0
     const phase = t < 1 ? 0 : 1 - Math.exp(-0.4 * (t - 1))
     const ballZ = 0.005 * 20 * (1 - Math.exp((1 - Math.sqrt(1 + t * t)) / 20))
@@ -273,7 +272,7 @@ function animate() {
       stick.setPhase(phase, time, ballZ, ballStickRatio)
       stick.basePosition.z = 2 * smoothStep((t - 112))
     } else {
-      stick.setPhase(0, 0, 0, 1.45)
+      stick.setPhase(0, time, 0, 1)
       stick.basePosition.z = 2 * smoothStep((114 - t))
     }
     terminateThreshold = 0.02 + 0.5 * smoothStep((t - 15) / 30)
