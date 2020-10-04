@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { isWireFrame } from './setting'
 
 const vertexShader = `
 uniform float time;
@@ -74,7 +75,8 @@ export class Fire {
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader,
-      fragmentShader,
+      fragmentShader: isWireFrame ? 'void main(){gl_FragColor=vec4(0.15);}' : fragmentShader,
+      wireframe: isWireFrame,
       blending: THREE.AdditiveBlending,
       depthTest: false,
     })

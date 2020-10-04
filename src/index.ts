@@ -4,13 +4,15 @@ import { P3, sphereRandom, positionAt, velocityAt, CurveManager, setWind } from 
 import { createTextures, Environment } from './texture'
 import { Stick, stickRadius } from './stick'
 import { Fire } from './fire'
+import { isWireFrame } from './setting'
+
 const renderer = new THREE.WebGLRenderer()
-const size = 1024
+const size = isWireFrame ? 1600 : 1024
 renderer.setSize(size, size)
 const scene = new THREE.Scene()
 const backgroundScene = new THREE.Scene()
 const ballStickScene = new THREE.Scene()
-const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100)
+const camera = new THREE.PerspectiveCamera(isWireFrame ? 45 : 75, 1, 0.1, 100)
 const curves = new CurveManager(scene)
 camera.up = new THREE.Vector3(0, 0, 1)
 document.body.appendChild(renderer.domElement)
@@ -236,6 +238,9 @@ let prevAddTime: number = 0
 let runningTime = 0
 let startTime = 0
 const prevRenderedMousePos = { x: NaN, y: NaN }
+document.body.onClick = () => {
+  running = !running
+}
 function animate() {
   if (!running && prevRenderedMousePos.x === mouse.x && prevRenderedMousePos.y === mouse.y) {
     requestAnimationFrame(animate)

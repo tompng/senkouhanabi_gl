@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { isWireFrame } from './setting'
 
 const cylinderGeometry = new THREE.CylinderBufferGeometry(1, 1, 2, 12, 128)
 const vertexShader = `
@@ -111,8 +112,9 @@ export class Stick {
       new THREE.ShaderMaterial({
         uniforms: this.uniforms,
         vertexShader,
-        fragmentShader,
-        blending: THREE.CustomBlending,
+        fragmentShader: isWireFrame ? 'void main(){gl_FragColor=vec4(0.15);}' : fragmentShader,
+        wireframe: isWireFrame,
+        blending: isWireFrame ? THREE.AdditiveBlending : THREE.CustomBlending,
         blendSrc: THREE.SrcAlphaFactor,
         blendDst: THREE.OneMinusSrcAlphaFactor,
         depthWrite: false,

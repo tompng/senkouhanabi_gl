@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import { ShaderMaterial } from 'three'
+import { isWireFrame } from './setting'
+
 export type P3 = { x: number; y: number; z: number }
 const gravityZ = -9.8
 const wind = { x: 0.2, y: 0, z: 0 }
@@ -108,7 +110,8 @@ export class Curve {
     this.mesh.material = new ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader,
-      fragmentShader,
+      fragmentShader: isWireFrame ? 'void main(){gl_FragColor=vec4(0.15);}' : fragmentShader,
+      wireframe: isWireFrame,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false
