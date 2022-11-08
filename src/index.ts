@@ -221,6 +221,7 @@ for (let i = 0; i < 5; i++) add({ x: 0, y: 0, z: 0 }, 2.4)
 update(1000)
 let running = false
 let started = false
+let paused = false
 document.body.onclick = () => {
   if (!running) {
     running = true
@@ -229,6 +230,8 @@ document.body.onclick = () => {
     startTime = runningTime
   } else if (runningTime - startTime > 114) {
     startTime = runningTime
+  } else {
+    paused = !paused
   }
 }
 const windEffect = { x: 0, y: 0, vx: 0, vy: 0 }
@@ -238,9 +241,6 @@ let prevAddTime: number = 0
 let runningTime = 0
 let startTime = 0
 const prevRenderedMousePos = { x: NaN, y: NaN }
-document.body.onClick = () => {
-  running = !running
-}
 function animate() {
   if (!running && prevRenderedMousePos.x === mouse.x && prevRenderedMousePos.y === mouse.y) {
     requestAnimationFrame(animate)
@@ -250,7 +250,7 @@ function animate() {
   const dt = Math.min(time - twas, 1 / 15)
   twas = time
   let fireLighting = 0
-  if (running) {
+  if (running && !paused) {
     if (runningTime - startTime > 114 + 30) {
       started = true
       startTime = runningTime
